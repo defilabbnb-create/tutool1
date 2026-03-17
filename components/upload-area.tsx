@@ -78,19 +78,19 @@ export function UploadArea({ onFilesSelected, errorMessage }: UploadAreaProps) {
         ref={inputRef}
         className="file-input"
         type="file"
-        accept="image/png,image/jpeg,image/jpg,image/webp"
+        accept="image/png,image/jpeg,image/jpg,image/webp,image/jxl,.jxl"
         multiple
         onChange={onFileChange}
       />
       <p className="upload-title">Drop your images here or click to upload</p>
       <p className="upload-subtitle">
-        We&apos;ll compress them, convert them to WebP, and get them ready to download in seconds.
+        We&apos;ll compress them in their original format and get them ready to download in seconds.
       </p>
       <p className="upload-meta">{formatSelectionText(selectedCount)}</p>
       <div className="upload-helper" aria-label="Upload limits and privacy">
-        <p>Supports PNG, JPG, WebP</p>
+        <p>Supports PNG, JPG, WebP, JXL</p>
         <p>Max 10MB each, up to 20 files</p>
-        <p>Output is converted to WebP</p>
+        <p>JXL uploads can be downloaded as PNG or JPG</p>
         <p>Processed instantly and not stored</p>
       </div>
       {errorMessage ? <p className="upload-error">{errorMessage}</p> : null}

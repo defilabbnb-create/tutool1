@@ -4,12 +4,12 @@ export function HomeClient() {
   return (
     <LandingClient
       title="Make Your Images Lighter in Seconds"
-      subtitle="Reduce image size, convert to WebP, and prepare every image for the web — instantly."
-      intro="PixelPress keeps image cleanup simple. Upload once, get smaller web-ready files back in seconds, and move on with your site, store, or next launch."
+      subtitle="Reduce image size and prepare PNG, JPG, and WebP images for the web — instantly."
+      intro="PixelPress keeps image cleanup simple. Upload once, get smaller web-ready files back in the same format, and move on with your site, store, or next launch."
       featurePoints={[
         "Reduce image size without noticeable quality loss",
         "Batch compress multiple images in one quick upload",
-        "Ready-to-use WebP files for faster websites and pages",
+        "Download in PNG, WebP, or JPEG-XL when available",
       ]}
       benefitTitle="Why PixelPress?"
       benefits={[
@@ -20,11 +20,11 @@ export function HomeClient() {
       faqs={[
         {
           question: "Which image formats can I upload?",
-          answer: "You can upload PNG, JPG, JPEG, and WebP images.",
+          answer: "You can upload PNG, JPG, JPEG, WebP, and JXL images.",
         },
         {
           question: "What format do I get back?",
-          answer: "All compressed exports are converted to WebP for smaller file sizes.",
+          answer: "Regular uploads stay in the same format, and JXL uploads can be downloaded as PNG or JPG.",
         },
         {
           question: "Are my files stored?",

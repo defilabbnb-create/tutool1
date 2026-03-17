@@ -5,18 +5,19 @@ export const ALLOWED_MIME_TYPES = [
   "image/jpg",
   "image/png",
   "image/webp",
+  "image/jxl",
 ] as const;
 
-export const ALLOWED_EXTENSIONS = [".jpeg", ".jpg", ".png", ".webp"] as const;
+export const ALLOWED_EXTENSIONS = [".jpeg", ".jpg", ".png", ".webp", ".jxl"] as const;
 export const EMPTY_UPLOAD_MESSAGE = "No files were uploaded.";
 export const TOO_MANY_FILES_MESSAGE = `You can upload up to ${MAX_FILES_PER_UPLOAD} images at a time.`;
 export const INVALID_FILE_TYPE_MESSAGE =
-  "Only PNG, JPG, and WebP images are supported.";
+  "Only PNG, JPG, WebP, and JXL images are supported.";
 export const FILE_TOO_LARGE_MESSAGE = "Each file must be 10MB or smaller.";
 export const EMPTY_FILE_MESSAGE = "No files were uploaded.";
 
 export function formatAllowedTypesLabel() {
-  return "JPG, JPEG, PNG, or WebP";
+  return "JPG, JPEG, PNG, WebP, or JXL";
 }
 
 export function isAllowedUpload(fileName: string, mimeType: string) {

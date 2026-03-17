@@ -8,6 +8,16 @@ export type ExportVariant = {
   base64: string;
 };
 
+export type FormatExport = {
+  label: string;
+  outputName: string;
+  compressedSize: number;
+  width: number;
+  height: number;
+  mimeType: string;
+  base64: string;
+};
+
 export type UploadItem = {
   id: string;
   fileName: string;
@@ -21,6 +31,8 @@ export type UploadItem = {
   width?: number;
   height?: number;
   variants?: ExportVariant[];
+  formatExports?: FormatExport[];
+  formatMessage?: string;
   error?: string;
 };
 
@@ -28,10 +40,31 @@ type ResultsListProps = {
   items: UploadItem[];
   onDownload: (item: UploadItem) => void;
   onDownloadVariant: (variant: ExportVariant) => void;
+  onDownloadFormatExport: (formatExport: FormatExport) => void;
   onDownloadAll: () => void;
   canDownloadAll: boolean;
   isDownloadingAll: boolean;
 };
+
+function getFormatLabel(mimeType?: string) {
+  if (mimeType === "image/png") {
+    return "PNG";
+  }
+
+  if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
+    return "JPG";
+  }
+
+  if (mimeType === "image/webp") {
+    return "WebP";
+  }
+
+  if (mimeType === "image/jxl") {
+    return "JPEG-XL";
+  }
+
+  return "Image";
+}
 
 function formatBytes(bytes: number) {
   if (bytes === 0) {
@@ -60,6 +93,7 @@ export function ResultsList({
   items,
   onDownload,
   onDownloadVariant,
+  onDownloadFormatExport,
   onDownloadAll,
   canDownloadAll,
   isDownloadingAll,
@@ -160,7 +194,9 @@ export function ResultsList({
                       </div>
                       <div className="result-fact">
                         <span className="result-fact-label">Format</span>
-                        <span className="result-fact-value">WebP</span>
+                        <span className="result-fact-value">
+                          {getFormatLabel(item.mimeType)}
+                        </span>
                       </div>
                     </div>
                     <p className="result-meta">
@@ -168,6 +204,38 @@ export function ResultsList({
                         ? `${item.width}×${item.height} output ready to download.`
                         : "Compressed output ready to download."}
                     </p>
+                    {item.formatMessage ? (
+                      <p className="result-format-note">{item.formatMessage}</p>
+                    ) : null}
+                    {item.formatExports && item.formatExports.length > 0 ? (
+                      <div className="variant-list">
+                        {item.formatExports.map((formatExport) => (
+                          <div
+                            key={formatExport.outputName}
+                            className="variant-item"
+                          >
+                            <span className="variant-label">
+                              {formatExport.label}
+                            </span>
+                            <span className="variant-meta">
+                              {formatExport.width}×{formatExport.height}
+                            </span>
+                            <span className="variant-meta">
+                              {formatBytes(formatExport.compressedSize)}
+                            </span>
+                            <button
+                              type="button"
+                              className="variant-download-button"
+                              onClick={() =>
+                                onDownloadFormatExport(formatExport)
+                              }
+                            >
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                     {item.variants && item.variants.length > 0 ? (
                       <div className="variant-list">
                         {item.variants.map((variant) => (

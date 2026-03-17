@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { RecentUploads } from "@/components/recent-uploads";
 import {
   ExportVariant,
+  FormatExport,
   ResultsList,
   UploadItem,
 } from "@/components/results-list";
@@ -39,6 +40,8 @@ type CompressionSuccessResponse = {
   width: number;
   height: number;
   variants: ExportVariant[];
+  formatExports: FormatExport[];
+  formatMessage?: string;
 };
 
 type CompressionErrorResponse = {
@@ -226,6 +229,8 @@ export function LandingClient({
           width: data.width,
           height: data.height,
           variants: data.variants,
+          formatExports: data.formatExports,
+          formatMessage: data.formatMessage,
           error: undefined,
         }));
       } catch (error) {
@@ -384,6 +389,21 @@ export function LandingClient({
     }
   }, []);
 
+  const handleDownloadFormatExport = useCallback((formatExport: FormatExport) => {
+    trackEvent(analyticsEvents.downloadSingle, {
+      fileName: formatExport.outputName,
+    });
+    triggerDownload(
+      formatExport.outputName,
+      formatExport.mimeType,
+      formatExport.base64
+    );
+    if (enableRetention) {
+      setShowBookmarkPrompt(true);
+      setHasShownBookmarkHint(false);
+    }
+  }, [enableRetention]);
+
   const handleDownloadAll = useCallback(async () => {
     const successfulItems = items.filter(
       (item) =>
@@ -419,6 +439,14 @@ export function LandingClient({
           zip.file(
             getUniqueFileName(variant.outputName, usedNames),
             variant.base64,
+            { base64: true }
+          );
+        });
+
+        item.formatExports?.forEach((formatExport) => {
+          zip.file(
+            getUniqueFileName(formatExport.outputName, usedNames),
+            formatExport.base64,
             { base64: true }
           );
         });
@@ -545,6 +573,7 @@ export function LandingClient({
         items={items}
         onDownload={handleDownload}
         onDownloadVariant={handleDownloadVariant}
+        onDownloadFormatExport={handleDownloadFormatExport}
         onDownloadAll={handleDownloadAll}
         canDownloadAll={canDownloadAll}
         isDownloadingAll={isDownloadingAll}
