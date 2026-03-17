@@ -1,23 +1,37 @@
 export const MAX_FILES_PER_UPLOAD = 20;
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-export const ALLOWED_MIME_TYPES = [
+export const JXL_UPLOAD_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_JXL_UPLOAD === "true";
+
+const BASE_ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/webp",
-  "image/jxl",
 ] as const;
 
-export const ALLOWED_EXTENSIONS = [".jpeg", ".jpg", ".png", ".webp", ".jxl"] as const;
+const BASE_ALLOWED_EXTENSIONS = [".jpeg", ".jpg", ".png", ".webp"] as const;
+
+export const ALLOWED_MIME_TYPES = JXL_UPLOAD_ENABLED
+  ? [...BASE_ALLOWED_MIME_TYPES, "image/jxl"]
+  : [...BASE_ALLOWED_MIME_TYPES];
+
+export const ALLOWED_EXTENSIONS = JXL_UPLOAD_ENABLED
+  ? [...BASE_ALLOWED_EXTENSIONS, ".jxl"]
+  : [...BASE_ALLOWED_EXTENSIONS];
 export const EMPTY_UPLOAD_MESSAGE = "No files were uploaded.";
 export const TOO_MANY_FILES_MESSAGE = `You can upload up to ${MAX_FILES_PER_UPLOAD} images at a time.`;
 export const INVALID_FILE_TYPE_MESSAGE =
-  "Only PNG, JPG, WebP, and JXL images are supported.";
+  JXL_UPLOAD_ENABLED
+    ? "Only PNG, JPG, WebP, and JXL images are supported."
+    : "Only PNG, JPG, and WebP images are supported.";
 export const FILE_TOO_LARGE_MESSAGE = "Each file must be 10MB or smaller.";
 export const EMPTY_FILE_MESSAGE = "No files were uploaded.";
 
 export function formatAllowedTypesLabel() {
-  return "JPG, JPEG, PNG, WebP, or JXL";
+  return JXL_UPLOAD_ENABLED
+    ? "JPG, JPEG, PNG, WebP, or JXL"
+    : "JPG, JPEG, PNG, or WebP";
 }
 
 export function isAllowedUpload(fileName: string, mimeType: string) {

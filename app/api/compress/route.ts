@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   EMPTY_UPLOAD_MESSAGE,
   getUploadValidationError,
+  JXL_UPLOAD_ENABLED,
   MAX_FILES_PER_UPLOAD,
   TOO_MANY_FILES_MESSAGE,
 } from "@/lib/upload-rules";
@@ -294,7 +295,8 @@ export async function POST(request: NextRequest) {
     }
 
     const inputBuffer = Buffer.from(await inputFile.arrayBuffer());
-    const inputIsJxl = isJxlUpload(inputFile.name, inputFile.type);
+    const inputIsJxl =
+      JXL_UPLOAD_ENABLED && isJxlUpload(inputFile.name, inputFile.type);
 
     if (inputIsJxl) {
       const djxlAvailable = await ensureDjxlAvailable();

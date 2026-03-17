@@ -1,5 +1,6 @@
 "use client";
 
+import { JXL_UPLOAD_ENABLED } from "@/lib/upload-rules";
 import { ChangeEvent, DragEvent, useRef, useState } from "react";
 
 function formatSelectionText(count: number) {
@@ -57,6 +58,10 @@ export function UploadArea({ onFilesSelected, errorMessage }: UploadAreaProps) {
     event.target.value = "";
   };
 
+  const acceptTypes = JXL_UPLOAD_ENABLED
+    ? "image/png,image/jpeg,image/jpg,image/webp,image/jxl,.jxl"
+    : "image/png,image/jpeg,image/jpg,image/webp";
+
   return (
     <section
       className={`upload-area ${isDragging ? "is-dragging" : ""}`}
@@ -78,7 +83,7 @@ export function UploadArea({ onFilesSelected, errorMessage }: UploadAreaProps) {
         ref={inputRef}
         className="file-input"
         type="file"
-        accept="image/png,image/jpeg,image/jpg,image/webp,image/jxl,.jxl"
+        accept={acceptTypes}
         multiple
         onChange={onFileChange}
       />
@@ -88,9 +93,17 @@ export function UploadArea({ onFilesSelected, errorMessage }: UploadAreaProps) {
       </p>
       <p className="upload-meta">{formatSelectionText(selectedCount)}</p>
       <div className="upload-helper" aria-label="Upload limits and privacy">
-        <p>Supports PNG, JPG, WebP, JXL</p>
+        <p>
+          {JXL_UPLOAD_ENABLED
+            ? "Supports PNG, JPG, WebP, JXL"
+            : "Supports PNG, JPG, WebP"}
+        </p>
         <p>Max 10MB each, up to 20 files</p>
-        <p>JXL uploads can be downloaded as PNG or JPG</p>
+        <p>
+          {JXL_UPLOAD_ENABLED
+            ? "JXL uploads can be downloaded as PNG or JPG"
+            : "Output stays in the same format after compression"}
+        </p>
         <p>Processed instantly and not stored</p>
       </div>
       {errorMessage ? <p className="upload-error">{errorMessage}</p> : null}
