@@ -1,6 +1,7 @@
 import { expect, Page } from "@playwright/test";
 import sharp from "sharp";
 
+// Shared helpers keep Playwright fixtures small and repeatable.
 type FilePayload = {
   name: string;
   mimeType: string;
