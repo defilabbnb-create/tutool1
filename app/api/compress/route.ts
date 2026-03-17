@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   EMPTY_UPLOAD_MESSAGE,
   getUploadValidationError,
+  INVALID_IMAGE_CONTENT_MESSAGE,
   JXL_UPLOAD_ENABLED,
   MAX_FILES_PER_UPLOAD,
   TOO_MANY_FILES_MESSAGE,
@@ -244,6 +245,35 @@ async function convertJxlWithCli(
   }
 }
 
+async function validateRasterImage(
+  inputBuffer: Buffer,
+  expectedMimeType: string
+) {
+  try {
+    const metadata = await sharp(inputBuffer, { failOn: "error" }).metadata();
+
+    if (!metadata.width || !metadata.height || !metadata.format) {
+      return false;
+    }
+
+    if (expectedMimeType === "image/png") {
+      return metadata.format === "png";
+    }
+
+    if (expectedMimeType === "image/webp") {
+      return metadata.format === "webp";
+    }
+
+    if (expectedMimeType === "image/jpeg") {
+      return metadata.format === "jpeg";
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const clientIdentifier = getClientIdentifier(request.headers);
@@ -310,6 +340,13 @@ export async function POST(request: NextRequest) {
 
       const pngBuffer = await convertJxlWithCli(inputBuffer, ".png");
       const jpgBuffer = await convertJxlWithCli(inputBuffer, ".jpg");
+      const pngIsValid = await validateRasterImage(pngBuffer, "image/png");
+      const jpgIsValid = await validateRasterImage(jpgBuffer, "image/jpeg");
+
+      if (!pngIsValid || !jpgIsValid) {
+        return createError(INVALID_IMAGE_CONTENT_MESSAGE);
+      }
+
       const pngExport = await generateCompressedExport(
         pngBuffer,
         "image/png",
@@ -372,6 +409,12 @@ export async function POST(request: NextRequest) {
     }
 
     const outputMimeType = normalizeMimeType(inputFile.type);
+    const isValidImage = await validateRasterImage(inputBuffer, outputMimeType);
+
+    if (!isValidImage) {
+      return createError(INVALID_IMAGE_CONTENT_MESSAGE);
+    }
+
     const jxlSupported = await supportsJxl();
     const mainExport = await generateCompressedExport(
       inputBuffer,
@@ -451,6 +494,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Image compression failed.", error);
-    return createError("Failed to process image.", 500);
+    return createError("Oops, something went wrong. Please try again later.", 500);
   }
 }

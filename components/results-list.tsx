@@ -23,6 +23,8 @@ export type UploadItem = {
   fileName: string;
   originalSize: number;
   status: "loading" | "success" | "error";
+  progress?: number;
+  stage?: "uploading" | "processing";
   compressedSize?: number;
   savedPercent?: number;
   outputName?: string;
@@ -89,6 +91,18 @@ function getStatusLabel(status: UploadItem["status"]) {
   return "Done";
 }
 
+function getProgressLabel(item: UploadItem) {
+  if (item.status !== "loading") {
+    return "";
+  }
+
+  if (item.stage === "processing") {
+    return "Processing your image...";
+  }
+
+  return "Uploading your image...";
+}
+
 export function ResultsList({
   items,
   onDownload,
@@ -144,7 +158,23 @@ export function ResultsList({
                 {item.status === "loading" && (
                   <>
                     <p className="result-meta">
-                      Uploading and compressing your image...
+                      {getProgressLabel(item)}
+                    </p>
+                    <div
+                      className="result-progress"
+                      aria-label={`${item.fileName} upload progress`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.round(item.progress ?? 0)}
+                      role="progressbar"
+                    >
+                      <div
+                        className="result-progress-bar"
+                        style={{ width: `${Math.max(6, item.progress ?? 6)}%` }}
+                      />
+                    </div>
+                    <p className="result-progress-text">
+                      {Math.round(item.progress ?? 0)}%
                     </p>
                     <div className="result-facts">
                       <div className="result-fact">

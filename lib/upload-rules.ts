@@ -27,6 +27,8 @@ export const INVALID_FILE_TYPE_MESSAGE =
     : "Only PNG, JPG, and WebP images are supported.";
 export const FILE_TOO_LARGE_MESSAGE = "Each file must be 10MB or smaller.";
 export const EMPTY_FILE_MESSAGE = "No files were uploaded.";
+export const INVALID_IMAGE_CONTENT_MESSAGE =
+  "This file could not be read as a valid image.";
 
 export function formatAllowedTypesLabel() {
   return JXL_UPLOAD_ENABLED

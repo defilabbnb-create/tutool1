@@ -376,6 +376,46 @@ body {
   font-size: 0.86rem;
 }
 
+.upload-message {
+  width: min(480px, 100%);
+  margin: 0.95rem auto 0;
+  padding: 0.72rem 0.82rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.upload-message-error {
+  background: #fff8f8;
+  border-color: #f1d7d7;
+}
+
+.upload-message-success {
+  background: #f8fbf8;
+  border-color: #d9e8d9;
+}
+
+.upload-message-text {
+  margin: 0;
+  color: #2a2a2a;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.upload-message-dismiss {
+  border: 0;
+  background: transparent;
+  color: var(--soft-text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.05rem;
+}
+
 .features {
   margin: 1.3rem auto 0;
   display: flex;
@@ -785,6 +825,27 @@ body {
   line-height: 1.55;
 }
 
+.result-progress {
+  margin-top: 0.75rem;
+  height: 8px;
+  border-radius: 999px;
+  background: #efefef;
+  overflow: hidden;
+}
+
+.result-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3f3f3f 0%, #7b7b7b 100%);
+  transition: width 0.18s ease;
+}
+
+.result-progress-text {
+  margin: 0.45rem 0 0;
+  color: var(--soft-text);
+  font-size: 0.79rem;
+}
+
 .result-facts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -942,6 +1003,10 @@ body {
   .upload-area {
     padding: 3rem 1rem;
     border-radius: 14px;
+  }
+
+  .upload-message {
+    width: 100%;
   }
 
   .recent-upload-grid {

@@ -18,9 +18,16 @@ function formatSelectionText(count: number) {
 type UploadAreaProps = {
   onFilesSelected: (files: File[]) => void;
   errorMessage?: string;
+  successMessage?: string;
+  onDismissMessage?: () => void;
 };
 
-export function UploadArea({ onFilesSelected, errorMessage }: UploadAreaProps) {
+export function UploadArea({
+  onFilesSelected,
+  errorMessage,
+  successMessage,
+  onDismissMessage,
+}: UploadAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedCount, setSelectedCount] = useState(0);
@@ -106,7 +113,42 @@ export function UploadArea({ onFilesSelected, errorMessage }: UploadAreaProps) {
         </p>
         <p>Processed instantly and not stored</p>
       </div>
-      {errorMessage ? <p className="upload-error">{errorMessage}</p> : null}
+      {errorMessage ? (
+        <div className="upload-message upload-message-error" role="alert">
+          <p className="upload-message-text">{errorMessage}</p>
+          {onDismissMessage ? (
+            <button
+              type="button"
+              className="upload-message-dismiss"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDismissMessage();
+              }}
+              aria-label="Dismiss message"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {!errorMessage && successMessage ? (
+        <div className="upload-message upload-message-success" role="status">
+          <p className="upload-message-text">{successMessage}</p>
+          {onDismissMessage ? (
+            <button
+              type="button"
+              className="upload-message-dismiss"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDismissMessage();
+              }}
+              aria-label="Dismiss message"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

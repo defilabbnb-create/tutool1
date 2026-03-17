@@ -51,6 +51,10 @@ type CompressionErrorResponse = {
 const UPLOAD_CONCURRENCY = 3;
 const RATE_LIMIT_MESSAGE =
   "Too many requests. Please wait a moment and try again.";
+const GENERIC_UPLOAD_ERROR =
+  "Oops, something went wrong. Please try again later.";
+const SUCCESS_MESSAGE =
+  "Your image has been successfully compressed. Download it below.";
 
 type LandingClientProps = {
   title: string;
@@ -146,6 +150,7 @@ export function LandingClient({
   const [items, setItems] = useState<UploadItem[]>([]);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [selectionError, setSelectionError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [recentUploads, setRecentUploads] = useState<RecentUpload[]>([]);
   const [isRecentExpanded, setIsRecentExpanded] = useState(false);
   const [showBookmarkPrompt, setShowBookmarkPrompt] = useState(false);
@@ -175,23 +180,106 @@ export function LandingClient({
     );
   }, []);
 
+  const setItemProgress = useCallback(
+    (id: string, progress: number, stage: UploadItem["stage"]) => {
+      updateItem(id, (item) => ({
+        ...item,
+        stage,
+        progress,
+      }));
+    },
+    [updateItem]
+  );
+
   const uploadFile = useCallback(
     async (file: File, id: string) => {
       try {
         const formData = new FormData();
         formData.append("file", file);
+        setItemProgress(id, 6, "uploading");
 
-        const response = await fetch("/api/compress", {
-          method: "POST",
-          body: formData,
+        const data = await new Promise<CompressionSuccessResponse>((resolve, reject) => {
+          const request = new XMLHttpRequest();
+          let hasStartedProcessing = false;
+          let progressTimer: number | undefined;
+
+          const clearProgressTimer = () => {
+            if (progressTimer) {
+              window.clearInterval(progressTimer);
+            }
+          };
+
+          const startProcessingState = () => {
+            if (hasStartedProcessing) {
+              return;
+            }
+
+            hasStartedProcessing = true;
+            setItemProgress(id, 92, "processing");
+            progressTimer = window.setInterval(() => {
+              updateItem(id, (item) => {
+                const nextProgress = Math.min((item.progress ?? 92) + 1, 98);
+                return {
+                  ...item,
+                  stage: "processing",
+                  progress: nextProgress,
+                };
+              });
+            }, 220);
+          };
+
+          request.open("POST", "/api/compress");
+
+          request.upload.addEventListener("progress", (event) => {
+            if (!event.lengthComputable) {
+              return;
+            }
+
+            const nextProgress = Math.min(
+              90,
+              Math.max(6, Math.round((event.loaded / event.total) * 90))
+            );
+            setItemProgress(id, nextProgress, "uploading");
+          });
+
+          request.addEventListener("readystatechange", () => {
+            if (request.readyState >= XMLHttpRequest.HEADERS_RECEIVED) {
+              startProcessingState();
+            }
+          });
+
+          request.addEventListener("load", () => {
+            clearProgressTimer();
+
+            const responseJson = JSON.parse(
+              request.responseText || "{}"
+            ) as CompressionSuccessResponse & CompressionErrorResponse;
+
+            if (request.status >= 200 && request.status < 300) {
+              resolve(responseJson);
+              return;
+            }
+
+            reject(
+              new Error(
+                responseJson.error ?? GENERIC_UPLOAD_ERROR
+              )
+            );
+          });
+
+          request.addEventListener("error", () => {
+            clearProgressTimer();
+            reject(new Error(GENERIC_UPLOAD_ERROR));
+          });
+
+          request.addEventListener("abort", () => {
+            clearProgressTimer();
+            reject(new Error(GENERIC_UPLOAD_ERROR));
+          });
+
+          request.send(formData);
         });
-
-        if (!response.ok) {
-          const errorJson = (await response.json().catch(() => ({}))) as CompressionErrorResponse;
-          throw new Error(errorJson.error ?? "We couldn't process that image. Please try again.");
-        }
-
-        const data = (await response.json()) as CompressionSuccessResponse;
+        setItemProgress(id, 100, "processing");
 
         trackEvent(analyticsEvents.uploadSuccess, {
           sourceType: file.type || "unknown",
@@ -218,9 +306,14 @@ export function LandingClient({
           setHasShownBookmarkHint(false);
         }
 
+        setSuccessMessage(SUCCESS_MESSAGE);
+        setSelectionError("");
+
         updateItem(id, (item) => ({
           ...item,
           status: "success",
+          progress: 100,
+          stage: undefined,
           compressedSize: data.compressedSize,
           savedPercent: data.savedPercent,
           outputName: data.outputName,
@@ -237,10 +330,14 @@ export function LandingClient({
         const message =
           error instanceof Error
             ? error.message
-            : "We couldn't process that image. Please try again.";
+            : GENERIC_UPLOAD_ERROR;
 
         if (message === RATE_LIMIT_MESSAGE) {
           setSelectionError(RATE_LIMIT_MESSAGE);
+        } else if (message === EMPTY_FILE_MESSAGE || message === FILE_TOO_LARGE_MESSAGE) {
+          setSelectionError(message);
+        } else if (message.includes("supported")) {
+          setSelectionError(message);
         }
 
         trackEvent(analyticsEvents.uploadFailed, {
@@ -250,11 +347,13 @@ export function LandingClient({
         updateItem(id, (item) => ({
           ...item,
           status: "error",
+          progress: undefined,
+          stage: undefined,
           error: message,
         }));
       }
     },
-    [enableRetention, updateItem]
+    [enableRetention, setItemProgress, updateItem]
   );
 
   const processUploadQueue = useCallback(
@@ -292,6 +391,7 @@ export function LandingClient({
 
       if (files.length > MAX_FILES_PER_UPLOAD) {
         setSelectionError(TOO_MANY_FILES_MESSAGE);
+        setSuccessMessage("");
         trackEvent(analyticsEvents.uploadFailed, {
           reason: "too_many_files",
         });
@@ -299,6 +399,7 @@ export function LandingClient({
       }
 
       setSelectionError("");
+      setSuccessMessage("");
 
       const validFiles: File[] = [];
       const invalidItems: UploadItem[] = [];
@@ -339,6 +440,8 @@ export function LandingClient({
         fileName: file.name,
         originalSize: file.size,
         status: "loading",
+        progress: 0,
+        stage: "uploading",
       }));
 
       if (validFiles.length > 0) {
@@ -513,6 +616,11 @@ export function LandingClient({
       <UploadArea
         onFilesSelected={handleFilesSelected}
         errorMessage={selectionError}
+        successMessage={successMessage}
+        onDismissMessage={() => {
+          setSelectionError("");
+          setSuccessMessage("");
+        }}
       />
       {enableRetention ? (
         <div className="recent-uploads-cta">
