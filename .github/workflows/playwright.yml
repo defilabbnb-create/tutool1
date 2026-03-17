@@ -4,13 +4,32 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "tests/**"
+      - "src/**"
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.ts"
   pull_request:
     branches:
       - master
+    paths:
+      - "tests/**"
+      - "src/**"
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.ts"
   workflow_dispatch:
 
 jobs:
   e2e:
+    name: Playwright E2E Tests - Test Execution
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
