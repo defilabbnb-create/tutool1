@@ -1,3 +1,13 @@
+export type ExportVariant = {
+  label: string;
+  outputName: string;
+  compressedSize: number;
+  width: number;
+  height: number;
+  mimeType: string;
+  base64: string;
+};
+
 export type UploadItem = {
   id: string;
   fileName: string;
@@ -8,12 +18,16 @@ export type UploadItem = {
   outputName?: string;
   mimeType?: string;
   base64?: string;
+  width?: number;
+  height?: number;
+  variants?: ExportVariant[];
   error?: string;
 };
 
 type ResultsListProps = {
   items: UploadItem[];
   onDownload: (item: UploadItem) => void;
+  onDownloadVariant: (variant: ExportVariant) => void;
   onDownloadAll: () => void;
   canDownloadAll: boolean;
   isDownloadingAll: boolean;
@@ -30,9 +44,22 @@ function formatBytes(bytes: number) {
   return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+function getStatusLabel(status: UploadItem["status"]) {
+  if (status === "loading") {
+    return "Processing";
+  }
+
+  if (status === "error") {
+    return "Failed";
+  }
+
+  return "Done";
+}
+
 export function ResultsList({
   items,
   onDownload,
+  onDownloadVariant,
   onDownloadAll,
   canDownloadAll,
   isDownloadingAll,
@@ -53,29 +80,117 @@ export function ResultsList({
 
       {items.length === 0 ? (
         <div className="results-empty">
-          <p className="results-empty-title">Your compressed files will show up here.</p>
+          <p className="results-empty-title">Your optimized files will appear here.</p>
           <p className="results-empty-copy">
-            Drop in a few images to preview savings and download them one by one or as a ZIP.
+            Upload images to preview savings, compare export sizes, and download them individually or as a ZIP.
           </p>
         </div>
       ) : (
         <div className="result-list">
           {items.map((item) => (
-            <article key={item.id} className="result-item">
+            <article
+              key={item.id}
+              className={`result-item result-item-${item.status}`}
+            >
               <div className="result-main">
-                <p className="result-name">{item.fileName}</p>
+                <div className="result-topline">
+                  <p className="result-name">{item.fileName}</p>
+                  <span
+                    className={`result-status ${
+                      item.status === "error"
+                        ? "error"
+                        : item.status === "success"
+                          ? "success"
+                          : ""
+                    }`}
+                  >
+                    {getStatusLabel(item.status)}
+                  </span>
+                </div>
                 {item.status === "loading" && (
-                  <p className="result-meta">Processing...</p>
+                  <>
+                    <p className="result-meta">
+                      Uploading and compressing your image...
+                    </p>
+                    <div className="result-facts">
+                      <div className="result-fact">
+                        <span className="result-fact-label">Original</span>
+                        <span className="result-fact-value">
+                          {formatBytes(item.originalSize)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
                 )}
                 {item.status === "error" && (
-                  <p className="result-error">{item.error ?? "Upload failed."}</p>
+                  <>
+                    <p className="result-error">
+                      {item.error ?? "We couldn't process this file."}
+                    </p>
+                    <div className="result-facts">
+                      <div className="result-fact">
+                        <span className="result-fact-label">Original</span>
+                        <span className="result-fact-value">
+                          {formatBytes(item.originalSize)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
                 )}
                 {item.status === "success" && (
-                  <p className="result-meta">
-                    {formatBytes(item.originalSize)} →{" "}
-                    {formatBytes(item.compressedSize ?? 0)} ({item.savedPercent ?? 0}
-                    % saved)
-                  </p>
+                  <>
+                    <div className="result-facts">
+                      <div className="result-fact">
+                        <span className="result-fact-label">Original</span>
+                        <span className="result-fact-value">
+                          {formatBytes(item.originalSize)}
+                        </span>
+                      </div>
+                      <div className="result-fact">
+                        <span className="result-fact-label">Compressed</span>
+                        <span className="result-fact-value">
+                          {formatBytes(item.compressedSize ?? 0)}
+                        </span>
+                      </div>
+                      <div className="result-fact result-fact-highlight">
+                        <span className="result-fact-label">Saved</span>
+                        <span className="result-fact-value">
+                          {item.savedPercent ?? 0}%
+                        </span>
+                      </div>
+                      <div className="result-fact">
+                        <span className="result-fact-label">Format</span>
+                        <span className="result-fact-value">WebP</span>
+                      </div>
+                    </div>
+                    <p className="result-meta">
+                      {item.width && item.height
+                        ? `${item.width}×${item.height} output ready to download.`
+                        : "Compressed output ready to download."}
+                    </p>
+                    {item.variants && item.variants.length > 0 ? (
+                      <div className="variant-list">
+                        {item.variants.map((variant) => (
+                          <div key={variant.outputName} className="variant-item">
+                            <span className="variant-label">{variant.label}</span>
+                            <span className="variant-meta">
+                              {variant.width}×{variant.height}
+                            </span>
+                            <span className="variant-meta">
+                              {formatBytes(variant.compressedSize)}
+                            </span>
+                            <button
+                              type="button"
+                              className="variant-download-button"
+                              onClick={() => onDownloadVariant(variant)}
+                            >
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </div>
 

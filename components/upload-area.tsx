@@ -82,9 +82,17 @@ export function UploadArea({ onFilesSelected, errorMessage }: UploadAreaProps) {
         multiple
         onChange={onFileChange}
       />
-      <p className="upload-title">Drag & drop images here</p>
-      <p className="upload-subtitle">or click to select PNG, JPG, WebP</p>
+      <p className="upload-title">Drop your images here or click to upload</p>
+      <p className="upload-subtitle">
+        We&apos;ll compress them, convert them to WebP, and get them ready to download in seconds.
+      </p>
       <p className="upload-meta">{formatSelectionText(selectedCount)}</p>
+      <div className="upload-helper" aria-label="Upload limits and privacy">
+        <p>Supports PNG, JPG, WebP</p>
+        <p>Max 10MB each, up to 20 files</p>
+        <p>Output is converted to WebP</p>
+        <p>Processed instantly and not stored</p>
+      </div>
       {errorMessage ? <p className="upload-error">{errorMessage}</p> : null}
     </section>
   );
