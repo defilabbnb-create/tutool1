@@ -1,0 +1,29 @@
+{
+  "name": "tumvp",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "scripts": {
+    "predev": "node scripts/check-node-version.mjs strict",
+    "prebuild": "node scripts/check-node-version.mjs warn",
+    "prestart": "node scripts/check-node-version.mjs strict",
+    "dev": "env -u NODE_OPTIONS next dev",
+    "build": "env -u NODE_OPTIONS next build",
+    "start": "env -u NODE_OPTIONS next start"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "next": "15.3.1",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.13.10",
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4",
+    "typescript": "5.7.3"
+  }
+}
