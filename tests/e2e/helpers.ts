@@ -127,3 +127,5 @@ export async function gotoWithRetry(page: Page, path: string, attempts = 3) {
 
   throw lastError;
 }
+
+// PR trigger comment for status check verification.
