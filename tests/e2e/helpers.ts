@@ -77,6 +77,29 @@ export async function createWebpPayload(
   };
 }
 
+export async function createAvifPayload(
+  name: string,
+  width = 700,
+  height = 460
+): Promise<FilePayload> {
+  const buffer = await sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: { r: 90, g: 120, b: 180 },
+    },
+  })
+    .avif({ lossless: true, effort: 4 })
+    .toBuffer();
+
+  return {
+    name,
+    mimeType: "image/avif",
+    buffer,
+  };
+}
+
 export function createTextPayload(name: string, text = "hello world"): FilePayload {
   return {
     name,

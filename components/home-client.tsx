@@ -3,11 +3,11 @@ import { JXL_UPLOAD_ENABLED } from "@/lib/upload-rules";
 
 export function HomeClient() {
   const featurePoints = [
-    "Reduce image size without noticeable quality loss",
-    "Batch compress multiple images in one quick upload",
+    "Choose PNG, JPG, WebP, or AVIF output in one quick step",
+    "Default to WebP for smaller files and faster pages",
     JXL_UPLOAD_ENABLED
       ? "Download in PNG, WebP, or JPEG-XL when available"
-      : "Keep image files lighter without changing their format",
+      : "Fall back automatically when advanced compression tools are unavailable",
   ];
 
   const faqs = [
@@ -20,8 +20,8 @@ export function HomeClient() {
     {
       question: "What format do I get back?",
       answer: JXL_UPLOAD_ENABLED
-        ? "Regular uploads stay in the same format, and JXL uploads can be downloaded as PNG or JPG."
-        : "Uploads stay in the same format after compression, so they are ready to use right away.",
+        ? "Choose PNG, JPG, WebP, or AVIF output before upload. JXL uploads can still be downloaded as PNG or JPG."
+        : "Choose PNG, JPG, WebP, or AVIF before upload. WebP is the default because it usually gives the smallest files.",
     },
     {
       question: "Are my files stored?",
@@ -32,14 +32,14 @@ export function HomeClient() {
   return (
     <LandingClient
       title="Make Your Images Lighter in Seconds"
-      subtitle="Reduce image size and prepare PNG, JPG, and WebP images for the web — instantly."
-      intro="PixelPress keeps image cleanup simple. Upload once, get smaller web-ready files back in the same format, and move on with your site, store, or next launch."
+      subtitle="Compress, convert, and optimize PNG, JPG, WebP, and AVIF images for the web — instantly."
+      intro="PixelPress keeps image cleanup simple. Upload once, choose the format you want back, and download lighter files that are ready for the web."
       featurePoints={featurePoints}
       benefitTitle="Why PixelPress?"
       benefits={[
         "Keep pages fast with lighter images that are easier to ship and share.",
-        "Convert messy image batches into clean WebP files without extra steps.",
-        "Download single files or a ZIP bundle when everything is ready.",
+        "Start with WebP by default, or switch to PNG, JPG, or AVIF when compatibility matters.",
+        "Download single files or a ZIP bundle once optimization is complete.",
       ]}
       faqs={faqs}
       relatedLinks={[

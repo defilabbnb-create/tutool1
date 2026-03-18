@@ -7,6 +7,7 @@ import { RecentUploads } from "@/components/recent-uploads";
 import {
   ExportVariant,
   FormatExport,
+  PreviewOption,
   ResultsList,
   UploadItem,
 } from "@/components/results-list";
@@ -17,8 +18,9 @@ import {
   EMPTY_FILE_MESSAGE,
   FILE_TOO_LARGE_MESSAGE,
   getUploadValidationError,
-  TOO_MANY_FILES_MESSAGE,
   MAX_FILES_PER_UPLOAD,
+  OutputFormatOption,
+  TOO_MANY_FILES_MESSAGE,
 } from "@/lib/upload-rules";
 import { SITE_NAME } from "@/lib/site";
 import {
@@ -39,8 +41,10 @@ type CompressionSuccessResponse = {
   base64: string;
   width: number;
   height: number;
+  methodUsed: string;
   variants: ExportVariant[];
   formatExports: FormatExport[];
+  previewOptions: PreviewOption[];
   formatMessage?: string;
 };
 
@@ -151,7 +155,7 @@ export function LandingClient({
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [selectionError, setSelectionError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [preferWebpOutput, setPreferWebpOutput] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<OutputFormatOption>("webp");
   const [recentUploads, setRecentUploads] = useState<RecentUpload[]>([]);
   const [isRecentExpanded, setIsRecentExpanded] = useState(false);
   const [showBookmarkPrompt, setShowBookmarkPrompt] = useState(false);
@@ -197,9 +201,7 @@ export function LandingClient({
       try {
         const formData = new FormData();
         formData.append("file", file);
-        if (preferWebpOutput) {
-          formData.append("format", "webp");
-        }
+        formData.append("format", selectedFormat);
         setItemProgress(id, 6, "uploading");
 
         const data = await new Promise<CompressionSuccessResponse>((resolve, reject) => {
@@ -325,8 +327,10 @@ export function LandingClient({
           base64: data.base64,
           width: data.width,
           height: data.height,
+          methodUsed: data.methodUsed,
           variants: data.variants,
           formatExports: data.formatExports,
+          previewOptions: data.previewOptions,
           formatMessage: data.formatMessage,
           error: undefined,
         }));
@@ -357,7 +361,7 @@ export function LandingClient({
         }));
       }
     },
-    [enableRetention, preferWebpOutput, setItemProgress, updateItem]
+    [enableRetention, selectedFormat, setItemProgress, updateItem]
   );
 
   const processUploadQueue = useCallback(
@@ -511,6 +515,21 @@ export function LandingClient({
     }
   }, [enableRetention]);
 
+  const handleDownloadPreviewOption = useCallback((previewOption: PreviewOption) => {
+    trackEvent(analyticsEvents.downloadSingle, {
+      fileName: previewOption.outputName,
+    });
+    triggerDownload(
+      previewOption.outputName,
+      previewOption.mimeType,
+      previewOption.base64
+    );
+    if (enableRetention) {
+      setShowBookmarkPrompt(true);
+      setHasShownBookmarkHint(false);
+    }
+  }, [enableRetention]);
+
   const handleDownloadAll = useCallback(async () => {
     const successfulItems = items.filter(
       (item) =>
@@ -554,6 +573,14 @@ export function LandingClient({
           zip.file(
             getUniqueFileName(formatExport.outputName, usedNames),
             formatExport.base64,
+            { base64: true }
+          );
+        });
+
+        item.previewOptions?.forEach((previewOption) => {
+          zip.file(
+            getUniqueFileName(previewOption.outputName, usedNames),
+            previewOption.base64,
             { base64: true }
           );
         });
@@ -625,8 +652,8 @@ export function LandingClient({
           setSelectionError("");
           setSuccessMessage("");
         }}
-        preferWebpOutput={preferWebpOutput}
-        onPreferWebpChange={setPreferWebpOutput}
+        selectedFormat={selectedFormat}
+        onSelectedFormatChange={setSelectedFormat}
       />
       {enableRetention ? (
         <div className="recent-uploads-cta">
@@ -688,6 +715,7 @@ export function LandingClient({
         onDownload={handleDownload}
         onDownloadVariant={handleDownloadVariant}
         onDownloadFormatExport={handleDownloadFormatExport}
+        onDownloadPreviewOption={handleDownloadPreviewOption}
         onDownloadAll={handleDownloadAll}
         canDownloadAll={canDownloadAll}
         isDownloadingAll={isDownloadingAll}

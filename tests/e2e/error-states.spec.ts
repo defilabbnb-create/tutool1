@@ -14,10 +14,10 @@ test.describe("upload validation and errors", () => {
       .setInputFiles([createTextPayload("notes.txt", "not an image")]);
 
     await expect(
-      page.getByText("Only PNG, JPG, and WebP images are supported.")
+      page.getByText("Only PNG, JPG, WebP, and AVIF images are supported.")
     ).toBeVisible();
     await expect(page.locator(".result-item-error")).toContainText(
-      "Only PNG, JPG, and WebP images are supported."
+      "Only PNG, JPG, WebP, and AVIF images are supported."
     );
   });
 

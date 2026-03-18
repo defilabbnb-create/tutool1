@@ -1,6 +1,10 @@
 "use client";
 
-import { JXL_UPLOAD_ENABLED } from "@/lib/upload-rules";
+import {
+  JXL_UPLOAD_ENABLED,
+  OUTPUT_FORMAT_OPTIONS,
+  OutputFormatOption,
+} from "@/lib/upload-rules";
 import { ChangeEvent, DragEvent, useRef, useState } from "react";
 
 function formatSelectionText(count: number) {
@@ -20,8 +24,8 @@ type UploadAreaProps = {
   errorMessage?: string;
   successMessage?: string;
   onDismissMessage?: () => void;
-  preferWebpOutput?: boolean;
-  onPreferWebpChange?: (checked: boolean) => void;
+  selectedFormat?: OutputFormatOption;
+  onSelectedFormatChange?: (format: OutputFormatOption) => void;
 };
 
 export function UploadArea({
@@ -29,8 +33,8 @@ export function UploadArea({
   errorMessage,
   successMessage,
   onDismissMessage,
-  preferWebpOutput = false,
-  onPreferWebpChange,
+  selectedFormat = "webp",
+  onSelectedFormatChange,
 }: UploadAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -70,8 +74,17 @@ export function UploadArea({
   };
 
   const acceptTypes = JXL_UPLOAD_ENABLED
-    ? "image/png,image/jpeg,image/jpg,image/webp,image/jxl,.jxl"
-    : "image/png,image/jpeg,image/jpg,image/webp";
+    ? "image/png,image/jpeg,image/jpg,image/webp,image/avif,image/jxl,.jxl"
+    : "image/png,image/jpeg,image/jpg,image/webp,image/avif";
+
+  const formatDescription =
+    selectedFormat === "webp"
+      ? "WebP generally gives the smallest files while keeping visual quality strong. Large uploads get 80, 60, and 50 quality previews."
+      : selectedFormat === "avif"
+        ? "AVIF can shrink images even further when the environment supports it. Large uploads get 80, 60, and 50 quality previews."
+        : selectedFormat === "png"
+          ? "PNG keeps transparency and uses lossless optimization."
+          : "JPG works well for photos and broad compatibility.";
 
   return (
     <section
@@ -100,7 +113,7 @@ export function UploadArea({
       />
       <p className="upload-title">Drop your images here or click to upload</p>
       <p className="upload-subtitle">
-        We&apos;ll compress them in their original format and get them ready to download in seconds.
+        We&apos;ll optimize them for the format you choose and get them ready to download in seconds.
       </p>
       <p className="upload-meta">{formatSelectionText(selectedCount)}</p>
       <div className="upload-helper" aria-label="Upload limits and privacy">
@@ -113,23 +126,33 @@ export function UploadArea({
         <p>
           {JXL_UPLOAD_ENABLED
             ? "JXL uploads can be downloaded as PNG or JPG"
-            : "Output stays in the same format after compression"}
+            : "Choose PNG, JPG, WebP, or AVIF output before uploading"}
         </p>
         <p>Processed instantly and not stored</p>
       </div>
-      <label
-        className="upload-format-toggle"
+      <div
+        className="upload-format-selector"
         onClick={(event) => event.stopPropagation()}
       >
-        <input
-          type="checkbox"
-          checked={preferWebpOutput}
-          onChange={(event) => onPreferWebpChange?.(event.target.checked)}
-        />
-        <span>
-          Prefer WebP output for smaller downloads
-        </span>
-      </label>
+        <label className="upload-format-label" htmlFor="upload-format-select">
+          Output format
+        </label>
+        <select
+          id="upload-format-select"
+          className="upload-format-select"
+          value={selectedFormat}
+          onChange={(event) =>
+            onSelectedFormatChange?.(event.target.value as OutputFormatOption)
+          }
+        >
+          {OUTPUT_FORMAT_OPTIONS.map((format) => (
+            <option key={format} value={format}>
+              {format === "jpeg" ? "JPG" : format.toUpperCase()}
+            </option>
+          ))}
+        </select>
+        <p className="upload-format-description">{formatDescription}</p>
+      </div>
       {errorMessage ? (
         <div className="upload-message upload-message-error" role="alert">
           <p className="upload-message-text">{errorMessage}</p>

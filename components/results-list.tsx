@@ -18,6 +18,20 @@ export type FormatExport = {
   base64: string;
 };
 
+export type PreviewOption = {
+  label: string;
+  quality: number;
+  outputName: string;
+  compressedSize: number;
+  savedPercent: number;
+  width: number;
+  height: number;
+  mimeType: string;
+  base64: string;
+  methodUsed: string;
+  isRecommended: boolean;
+};
+
 export type UploadItem = {
   id: string;
   fileName: string;
@@ -32,8 +46,10 @@ export type UploadItem = {
   base64?: string;
   width?: number;
   height?: number;
+  methodUsed?: string;
   variants?: ExportVariant[];
   formatExports?: FormatExport[];
+  previewOptions?: PreviewOption[];
   formatMessage?: string;
   error?: string;
 };
@@ -43,6 +59,7 @@ type ResultsListProps = {
   onDownload: (item: UploadItem) => void;
   onDownloadVariant: (variant: ExportVariant) => void;
   onDownloadFormatExport: (formatExport: FormatExport) => void;
+  onDownloadPreviewOption: (previewOption: PreviewOption) => void;
   onDownloadAll: () => void;
   canDownloadAll: boolean;
   isDownloadingAll: boolean;
@@ -63,6 +80,10 @@ function getFormatLabel(mimeType?: string) {
 
   if (mimeType === "image/jxl") {
     return "JPEG-XL";
+  }
+
+  if (mimeType === "image/avif") {
+    return "AVIF";
   }
 
   return "Image";
@@ -108,6 +129,7 @@ export function ResultsList({
   onDownload,
   onDownloadVariant,
   onDownloadFormatExport,
+  onDownloadPreviewOption,
   onDownloadAll,
   canDownloadAll,
   isDownloadingAll,
@@ -228,6 +250,12 @@ export function ResultsList({
                           {getFormatLabel(item.mimeType)}
                         </span>
                       </div>
+                      <div className="result-fact">
+                        <span className="result-fact-label">Method</span>
+                        <span className="result-fact-value">
+                          {item.methodUsed ?? "auto"}
+                        </span>
+                      </div>
                     </div>
                     <p className="result-meta">
                       {item.width && item.height
@@ -236,6 +264,53 @@ export function ResultsList({
                     </p>
                     {item.formatMessage ? (
                       <p className="result-format-note">{item.formatMessage}</p>
+                    ) : null}
+                    {item.previewOptions && item.previewOptions.length > 0 ? (
+                      <>
+                        <p className="result-format-note">
+                          Lossy preview options are shown below so you can compare size and visual quality before downloading.
+                        </p>
+                        <div className="preview-option-list">
+                        {item.previewOptions.map((previewOption) => (
+                          <div
+                            key={previewOption.outputName}
+                            className={`preview-option-item ${
+                              previewOption.isRecommended ? "is-recommended" : ""
+                            }`}
+                          >
+                            <div className="preview-option-header">
+                              <span className="variant-label">{previewOption.label}</span>
+                              {previewOption.isRecommended ? (
+                                <span className="preview-option-badge">Recommended lossy</span>
+                              ) : null}
+                            </div>
+                            <img
+                              className="preview-option-image"
+                              src={`data:${previewOption.mimeType};base64,${previewOption.base64}`}
+                              alt={`${previewOption.label} preview`}
+                            />
+                            <div className="preview-option-meta">
+                              <span className="variant-meta">
+                                {previewOption.width}×{previewOption.height}
+                              </span>
+                              <span className="variant-meta">
+                                {formatBytes(previewOption.compressedSize)}
+                              </span>
+                              <span className="variant-meta">
+                                Saved {previewOption.savedPercent}%
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              className="variant-download-button"
+                              onClick={() => onDownloadPreviewOption(previewOption)}
+                            >
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                        </div>
+                      </>
                     ) : null}
                     {item.formatExports && item.formatExports.length > 0 ? (
                       <div className="variant-list">

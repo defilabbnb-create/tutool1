@@ -8,9 +8,13 @@ const BASE_ALLOWED_MIME_TYPES = [
   "image/jpg",
   "image/png",
   "image/webp",
+  "image/avif",
 ] as const;
 
-const BASE_ALLOWED_EXTENSIONS = [".jpeg", ".jpg", ".png", ".webp"] as const;
+const BASE_ALLOWED_EXTENSIONS = [".jpeg", ".jpg", ".png", ".webp", ".avif"] as const;
+
+export const OUTPUT_FORMAT_OPTIONS = ["png", "jpeg", "webp", "avif"] as const;
+export type OutputFormatOption = (typeof OUTPUT_FORMAT_OPTIONS)[number];
 
 export const ALLOWED_MIME_TYPES = JXL_UPLOAD_ENABLED
   ? [...BASE_ALLOWED_MIME_TYPES, "image/jxl"]
@@ -23,8 +27,8 @@ export const EMPTY_UPLOAD_MESSAGE = "No files were uploaded.";
 export const TOO_MANY_FILES_MESSAGE = `You can upload up to ${MAX_FILES_PER_UPLOAD} images at a time.`;
 export const INVALID_FILE_TYPE_MESSAGE =
   JXL_UPLOAD_ENABLED
-    ? "Only PNG, JPG, WebP, and JXL images are supported."
-    : "Only PNG, JPG, and WebP images are supported.";
+    ? "Only PNG, JPG, WebP, AVIF, and JXL images are supported."
+    : "Only PNG, JPG, WebP, and AVIF images are supported.";
 export const FILE_TOO_LARGE_MESSAGE = "Each file must be 10MB or smaller.";
 export const EMPTY_FILE_MESSAGE = "No files were uploaded.";
 export const INVALID_IMAGE_CONTENT_MESSAGE =
@@ -32,8 +36,8 @@ export const INVALID_IMAGE_CONTENT_MESSAGE =
 
 export function formatAllowedTypesLabel() {
   return JXL_UPLOAD_ENABLED
-    ? "JPG, JPEG, PNG, WebP, or JXL"
-    : "JPG, JPEG, PNG, or WebP";
+    ? "JPG, JPEG, PNG, WebP, AVIF, or JXL"
+    : "JPG, JPEG, PNG, WebP, or AVIF";
 }
 
 export function isAllowedUpload(fileName: string, mimeType: string) {

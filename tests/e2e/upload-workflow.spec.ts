@@ -1,5 +1,6 @@
 import { expect, Page, test } from "@playwright/test";
 import {
+  createAvifPayload,
   createJpegPayload,
   createPngPayload,
   createTextPayload,
@@ -8,11 +9,17 @@ import {
   parseFormattedBytes,
 } from "./helpers";
 
-async function uploadFiles(
-  page: Page,
-  files: Array<{ name: string; mimeType: string; buffer: Buffer }>
-) {
+type UploadPayload = {
+  name: string;
+  mimeType: string;
+  buffer: Buffer;
+};
+
+async function preparePage(page: Page) {
   await gotoWithRetry(page, "/");
+}
+
+async function uploadFiles(page: Page, files: UploadPayload[]) {
   await page.locator('input[type="file"]').setInputFiles(files);
 }
 
@@ -20,6 +27,30 @@ async function waitForFirstSuccess(page: Page) {
   const successItem = page.locator(".result-item-success").first();
   await expect(successItem).toBeVisible({ timeout: 45000 });
   return successItem;
+}
+
+async function selectOutputFormat(page: Page, value: string) {
+  await page.getByLabel("Output format").selectOption(value);
+}
+
+async function expectFormatResult(
+  page: Page,
+  file: UploadPayload,
+  expectedFormatLabel: string,
+  expectedExtension: string
+) {
+  await uploadFiles(page, [file]);
+
+  const successItem = await waitForFirstSuccess(page);
+  await expect(
+    successItem.locator(".result-fact").nth(3).locator(".result-fact-value")
+  ).toHaveText(expectedFormatLabel);
+
+  const downloadPromise = page.waitForEvent("download");
+  await successItem.locator(".download-button").click();
+  expect((await downloadPromise).suggestedFilename()).toBe(
+    file.name.replace(/\.[^/.]+$/, expectedExtension)
+  );
 }
 
 test.describe("upload workflow", () => {
@@ -30,13 +61,16 @@ test.describe("upload workflow", () => {
     const png = await createPngPayload("large-test.png", 1000, 1000);
     const originalSize = png.buffer.byteLength;
 
+    await preparePage(page);
     await uploadFiles(page, [png]);
 
     await expect(page.getByText(/Uploading your image|Processing your image/i)).toBeVisible();
     await expect(page.locator(".result-progress")).toBeVisible();
 
     const successItem = await waitForFirstSuccess(page);
-    await expect(page.getByText("Your image has been successfully compressed. Download it below.")).toBeVisible();
+    await expect(
+      page.getByText("Your image has been successfully compressed. Download it below.")
+    ).toBeVisible();
 
     const compressedValue = await successItem
       .locator(".result-fact")
@@ -44,16 +78,16 @@ test.describe("upload workflow", () => {
       .locator(".result-fact-value")
       .innerText();
 
+    expect(parseFormattedBytes(compressedValue)).toBeGreaterThan(0);
     expect(parseFormattedBytes(compressedValue)).toBeLessThanOrEqual(originalSize);
     await expect(successItem.locator(".download-button")).toBeVisible();
   });
 
-  test("handles JPG and WebP uploads and enables ZIP download for batch uploads", async ({
-    page,
-  }) => {
+  test("keeps batch uploads working and enables ZIP download", async ({ page }) => {
     const jpg = await createJpegPayload("photo.jpg");
     const webp = await createWebpPayload("banner.webp");
 
+    await preparePage(page);
     await uploadFiles(page, [jpg, webp]);
 
     await expect(page.locator(".result-item-success")).toHaveCount(2, {
@@ -70,94 +104,82 @@ test.describe("upload workflow", () => {
     expect(download.suggestedFilename()).toBe("images.zip");
   });
 
-  test("keeps PNG output by default and switches to WebP when requested", async ({
-    page,
-  }) => {
-    test.setTimeout(45_000);
+  test("uses WebP by default when no format is changed", async ({ page }) => {
+    const png = await createPngPayload("default-format.png", 600, 600);
 
-    const png = await createPngPayload("toggle-test.png", 600, 600);
-    await page.addInitScript(() => {
-      const append = FormData.prototype.append;
-      const recorded: Array<{ name: string; value: string }> = [];
+    await preparePage(page);
+    const selector = page.getByLabel("Output format");
+    await expect(selector).toHaveValue("webp");
 
-      Object.defineProperty(window, "__recordedFormDataFields", {
-        value: recorded,
-        configurable: true,
-      });
-
-      FormData.prototype.append = function patchedAppend(
-        name: string,
-        value: string | Blob
-      ) {
-        if (typeof value === "string") {
-          recorded.push({ name, value });
-        }
-
-        return append.call(this, name, value);
-      };
-    });
-
-    await gotoWithRetry(page, "/");
-
-    const webpToggle = page.getByLabel(/Prefer WebP output for smaller downloads/i);
-    await expect(webpToggle).not.toBeChecked();
-
-    await page.locator('input[type="file"]').setInputFiles([png]);
-
-    const defaultSuccessItem = await waitForFirstSuccess(page);
-    await expect(
-      defaultSuccessItem.locator(".result-fact").nth(3).locator(".result-fact-value")
-    ).toHaveText("PNG");
-    const initialFields = await page.evaluate(
-      () =>
-        (
-          window as Window & {
-            __recordedFormDataFields?: Array<{ name: string; value: string }>;
-          }
-        ).__recordedFormDataFields ?? []
-    );
-    expect(initialFields.some((field) => field.name === "format")).toBe(false);
-
-    const defaultDownload = page.waitForEvent("download");
-    await defaultSuccessItem.locator(".download-button").click();
-    expect((await defaultDownload).suggestedFilename()).toBe("toggle-test.png");
-
-    await webpToggle.check();
-    await expect(webpToggle).toBeChecked();
-    await page.evaluate(() => {
-      (
-        window as Window & {
-          __recordedFormDataFields?: Array<{ name: string; value: string }>;
-        }
-      ).__recordedFormDataFields = [];
-    });
-
-    await page.locator('input[type="file"]').setInputFiles([png]);
-
-    const webpSuccessItem = page.locator(".result-item-success").first();
-    await expect(
-      webpSuccessItem.locator(".result-fact").nth(3).locator(".result-fact-value")
-    ).toHaveText("WebP", { timeout: 45000 });
-    const webpFields = await page.evaluate(
-      () =>
-        (
-          window as Window & {
-            __recordedFormDataFields?: Array<{ name: string; value: string }>;
-          }
-        ).__recordedFormDataFields ?? []
-    );
-    expect(webpFields).toEqual(
-      expect.arrayContaining([{ name: "format", value: "webp" }])
-    );
-
-    const webpDownload = page.waitForEvent("download");
-    await webpSuccessItem.locator(".download-button").click();
-    expect((await webpDownload).suggestedFilename()).toBe("toggle-test.webp");
+    await expectFormatResult(page, png, "WebP", ".webp");
+    await expect(page.getByText("Quality 80")).toBeVisible();
+    await expect(page.getByText("Recommended lossy", { exact: true })).toBeVisible();
   });
 
-  test("does not trigger WebP processing for invalid non-image uploads", async ({
-    page,
-  }) => {
+  test("honours PNG output when selected", async ({ page }) => {
+    const png = await createPngPayload("selected-png.png", 600, 600);
+
+    await preparePage(page);
+    await selectOutputFormat(page, "png");
+    await expectFormatResult(page, png, "PNG", ".png");
+  });
+
+  test("honours JPG output when selected", async ({ page }) => {
+    const png = await createPngPayload("selected-jpg.png", 620, 620);
+
+    await preparePage(page);
+    await selectOutputFormat(page, "jpeg");
+    await expectFormatResult(page, png, "JPG", ".jpg");
+  });
+
+  test("honours WebP output when selected", async ({ page }) => {
+    const jpg = await createJpegPayload("selected-webp.jpg", 620, 620);
+
+    await preparePage(page);
+    await selectOutputFormat(page, "webp");
+    await expectFormatResult(page, jpg, "WebP", ".webp");
+  });
+
+  test("honours AVIF output when selected", async ({ page }) => {
+    const png = await createPngPayload("selected-avif.png", 640, 640);
+
+    await preparePage(page);
+    await selectOutputFormat(page, "avif");
+    await uploadFiles(page, [png]);
+
+    const successItem = await waitForFirstSuccess(page);
+    const formatValue = await successItem
+      .locator(".result-fact")
+      .nth(3)
+      .locator(".result-fact-value")
+      .innerText();
+
+    expect(["AVIF", "WebP"]).toContain(formatValue);
+
+    const downloadPromise = page.waitForEvent("download");
+    await successItem.locator(".download-button").click();
+    const download = await downloadPromise;
+
+    expect(["selected-avif.avif", "selected-avif.webp"]).toContain(
+      download.suggestedFilename()
+    );
+    await expect(page.getByText("Quality 80")).toBeVisible();
+  });
+
+  test("accepts AVIF uploads and can convert them to WebP", async ({ page }) => {
+    const avif = await createAvifPayload("source.avif");
+
+    await preparePage(page);
+    await selectOutputFormat(page, "webp");
+    await uploadFiles(page, [avif]);
+
+    const successItem = await waitForFirstSuccess(page);
+    await expect(
+      successItem.locator(".result-fact").nth(3).locator(".result-fact-value")
+    ).toHaveText("WebP");
+  });
+
+  test("handles non-image uploads with a friendly error", async ({ page }) => {
     const textFile = createTextPayload("not-an-image.txt", "not an image");
     let compressRequestCount = 0;
 
@@ -167,14 +189,12 @@ test.describe("upload workflow", () => {
       }
     });
 
-    await gotoWithRetry(page, "/");
-    const webpToggle = page.getByLabel(/Prefer WebP output for smaller downloads/i);
-    await webpToggle.check();
-
-    await page.locator('input[type="file"]').setInputFiles([textFile]);
+    await preparePage(page);
+    await selectOutputFormat(page, "avif");
+    await uploadFiles(page, [textFile]);
 
     await expect(page.locator(".result-item-error").first()).toContainText(
-      /Only PNG, JPG, and WebP images are supported|Only PNG, JPG, WebP, and JXL images are supported/i
+      /Only PNG, JPG, WebP, and AVIF images are supported|Only PNG, JPG, WebP, AVIF, and JXL images are supported/i
     );
     expect(compressRequestCount).toBe(0);
   });
