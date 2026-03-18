@@ -25,7 +25,7 @@ export function NotifySignup({
     event.preventDefault();
 
     if (!trimmedEmail) {
-      setError("Enter your email to get notified.");
+      setError("Please enter your email to get notified.");
       setMessage("");
       return;
     }

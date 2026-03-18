@@ -285,7 +285,7 @@ test.describe("upload workflow", () => {
 
     await notifySection.getByRole("button", { name: "Notify me" }).click();
     await expect(
-      notifySection.getByText("Enter your email to get notified.")
+      notifySection.getByText("Please enter your email to get notified.")
     ).toBeVisible();
 
     await notifySection.getByLabel("Notify email").fill("person@example.com");
