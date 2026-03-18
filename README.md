@@ -73,6 +73,17 @@ sudo apt-get install libimage-exiftool-perl jpegoptim optipng pngcrush webp liba
 
 ## Testing
 
+### Overview
+
+The automated test stack now covers four layers:
+
+- **Unit tests** for compression helpers, routing logic, notify validation, duplicates, filename handling, and preview recommendation logic
+- **API integration tests** for `POST /api/compress` and `POST /api/notify`
+- **Local Playwright E2E** against a locally started Next.js app
+- **Production smoke tests** against the live site at [https://tutool1.vercel.app](https://tutool1.vercel.app)
+
+This setup is now fully active on GitHub Actions and is meant to reduce reliance on manual testing.
+
 Run unit tests:
 
 ```bash
@@ -114,6 +125,63 @@ Open the Playwright HTML report after a run:
 ```bash
 npx playwright show-report
 ```
+
+### GitHub Actions
+
+Automated testing is now active on GitHub.
+
+Current workflows:
+
+- **CI Tests**
+  - runs automatically on `push`
+  - runs automatically on `pull_request`
+  - covers unit tests, API integration tests, build, and local Playwright E2E
+- **Production Smoke Tests**
+  - runs on `workflow_dispatch`
+  - runs daily on a schedule
+  - validates the live production site
+
+How to trigger:
+
+- CI runs automatically whenever matching changes are pushed or opened in a pull request
+- Production smoke can be triggered manually from the GitHub Actions UI
+- Production smoke also runs automatically on its daily schedule
+
+### Reports and artifacts
+
+Both workflows generate and upload test artifacts:
+
+- Playwright HTML report
+- Playwright JSON report data
+- screenshots on failure
+- traces on retry/failure
+- retained failure videos when applicable
+
+Each workflow also writes a GitHub Actions summary with:
+
+- total tests
+- passed
+- failed
+- skipped
+- key failing scenarios
+
+### Practical maintenance note
+
+This automated setup already proved useful during activation:
+
+- the first production smoke run caught a real smoke-test issue
+- the issue was a result-selection bug in the test flow, not a product regression
+- the test was fixed and rerun successfully
+
+That is a good sign that the current stack is doing its job: it can catch real workflow issues early and give enough artifacts to debug them quickly.
+
+### Current non-blocking warning
+
+GitHub Actions still shows a non-blocking warning for:
+
+- `actions/upload-artifact@v5`
+
+The warning is about GitHub’s Node.js 20 deprecation path for JavaScript actions. It does **not** currently block CI or production smoke runs, and both workflows are passing. We can revisit this later when GitHub or the action maintainers ship the next fully compatible runtime update.
 
 ## Production validation
 
@@ -177,22 +245,6 @@ For `WebP` and `AVIF`, the backend also:
 - keeps the full preview set available in the UI for visual comparison
 
 The API compares candidates when possible and reports the chosen method in the response.
-
-## CI
-
-GitHub Actions now validates four layers:
-
-- unit tests
-- API integration tests
-- local Playwright E2E against a local Next.js server
-- separate live production smoke tests
-
-Reports and artifacts:
-
-- Playwright HTML report
-- JSON summary data
-- screenshots / traces / videos on failure
-- GitHub Actions step summary with totals and key failing scenarios
 
 ## Deployment notes
 
