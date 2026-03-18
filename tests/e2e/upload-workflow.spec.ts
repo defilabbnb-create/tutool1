@@ -29,6 +29,14 @@ async function waitForFirstSuccess(page: Page) {
   return successItem;
 }
 
+async function waitForLatestSuccess(page: Page) {
+  const latestItem = page.locator(".result-list .result-item").first();
+  await expect(latestItem).toHaveClass(/result-item-success/, {
+    timeout: 45000,
+  });
+  return latestItem;
+}
+
 async function selectOutputFormat(page: Page, value: string) {
   await page.getByLabel("Output format").selectOption(value);
 }
@@ -41,7 +49,7 @@ async function expectFormatResult(
 ) {
   await uploadFiles(page, [file]);
 
-  const successItem = await waitForFirstSuccess(page);
+  const successItem = await waitForLatestSuccess(page);
   await expect(
     successItem.locator(".result-fact").nth(3).locator(".result-fact-value")
   ).toHaveText(expectedFormatLabel);
@@ -67,7 +75,7 @@ test.describe("upload workflow", () => {
     await expect(page.getByText(/Uploading your image|Processing your image/i)).toBeVisible();
     await expect(page.locator(".result-progress")).toBeVisible();
 
-    const successItem = await waitForFirstSuccess(page);
+    const successItem = await waitForLatestSuccess(page);
     await expect(
       page.getByText("Your image has been successfully compressed. Download it below.")
     ).toBeVisible();
@@ -149,7 +157,7 @@ test.describe("upload workflow", () => {
     await selectOutputFormat(page, "avif");
     await uploadFiles(page, [png]);
 
-    const successItem = await waitForFirstSuccess(page);
+    const successItem = await waitForLatestSuccess(page);
     const formatValue = await successItem
       .locator(".result-fact")
       .nth(3)
@@ -175,7 +183,7 @@ test.describe("upload workflow", () => {
     await selectOutputFormat(page, "webp");
     await uploadFiles(page, [avif]);
 
-    const successItem = await waitForFirstSuccess(page);
+    const successItem = await waitForLatestSuccess(page);
     await expect(
       successItem.locator(".result-fact").nth(3).locator(".result-fact-value")
     ).toHaveText("WebP");
@@ -208,7 +216,7 @@ test.describe("upload workflow", () => {
 
     await preparePage(page);
     await uploadFiles(page, [png]);
-    await waitForFirstSuccess(page);
+    await waitForLatestSuccess(page);
 
     const notifySection = page.getByRole("region", {
       name: "Batch tools updates",
@@ -240,7 +248,7 @@ test.describe("upload workflow", () => {
     await preparePage(page);
     await uploadFiles(page, [png]);
 
-    const successItem = await waitForFirstSuccess(page);
+    const successItem = await waitForLatestSuccess(page);
     await expect(successItem.locator(".result-fact-label").getByText("Original")).toBeVisible();
     await expect(successItem.locator(".result-fact-label").getByText("Compressed")).toBeVisible();
     await expect(successItem.locator(".result-fact-label").getByText("Saved")).toBeVisible();

@@ -16,9 +16,11 @@ async function uploadSingle(
 }
 
 async function waitForSuccess(page: Page) {
-  const successItem = page.locator(".result-item-success").first();
-  await expect(successItem).toBeVisible({ timeout: 45000 });
-  return successItem;
+  const latestItem = page.locator(".result-list .result-item").first();
+  await expect(latestItem).toHaveClass(/result-item-success/, {
+    timeout: 45000,
+  });
+  return latestItem;
 }
 
 test.describe("production smoke", () => {
