@@ -36,7 +36,7 @@ export type UploadItem = {
   id: string;
   fileName: string;
   originalSize: number;
-  status: "loading" | "success" | "error";
+  status: "pending" | "loading" | "success" | "error";
   progress?: number;
   stage?: "uploading" | "processing";
   compressedSize?: number;
@@ -101,6 +101,10 @@ function formatBytes(bytes: number) {
 }
 
 function getStatusLabel(status: UploadItem["status"]) {
+  if (status === "pending") {
+    return "Pending";
+  }
+
   if (status === "loading") {
     return "Processing";
   }
@@ -113,6 +117,10 @@ function getStatusLabel(status: UploadItem["status"]) {
 }
 
 function getProgressLabel(item: UploadItem) {
+  if (item.status === "pending") {
+    return "Waiting in queue...";
+  }
+
   if (item.status !== "loading") {
     return "";
   }
@@ -165,7 +173,7 @@ export function ResultsList({
           onClick={onDownloadAll}
           disabled={!canDownloadAll || isDownloadingAll}
         >
-          {isDownloadingAll ? "Preparing ZIP..." : "Download All"}
+          {isDownloadingAll ? "Preparing ZIP..." : "Download All (.zip)"}
         </button>
       </div>
 
@@ -219,6 +227,19 @@ export function ResultsList({
                     <p className="result-progress-text">
                       {Math.round(item.progress ?? 0)}%
                     </p>
+                    <div className="result-facts">
+                      <div className="result-fact">
+                        <span className="result-fact-label">Original</span>
+                        <span className="result-fact-value">
+                          {formatBytes(item.originalSize)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {item.status === "pending" && (
+                  <>
+                    <p className="result-meta">{getProgressLabel(item)}</p>
                     <div className="result-facts">
                       <div className="result-fact">
                         <span className="result-fact-label">Original</span>

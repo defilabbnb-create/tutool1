@@ -91,25 +91,31 @@ test.describe("upload workflow", () => {
     await expect(successItem.locator(".download-button")).toBeVisible();
   });
 
-  test("keeps batch uploads working and enables ZIP download", async ({ page }) => {
-    const jpg = await createJpegPayload("photo.jpg");
-    const webp = await createWebpPayload("banner.webp");
+  test("processes multiple files and enables ZIP download", async ({ page }) => {
+    const first = await createPngPayload("first.png", 360, 360);
+    const second = await createPngPayload("second.png", 420, 420);
+    const third = await createPngPayload("third.png", 480, 480);
 
     await preparePage(page);
-    await uploadFiles(page, [jpg, webp]);
+    await uploadFiles(page, [first, second, third]);
 
-    await expect(page.locator(".result-item-success")).toHaveCount(2, {
+    await expect(page.locator(".result-item-success")).toHaveCount(3, {
       timeout: 30000,
     });
+    await expect(page.getByText("first.png").first()).toBeVisible();
+    await expect(page.getByText("second.png").first()).toBeVisible();
+    await expect(page.getByText("third.png").first()).toBeVisible();
 
-    const downloadAllButton = page.getByRole("button", { name: "Download All" });
+    const downloadAllButton = page.getByRole("button", {
+      name: "Download All (.zip)",
+    });
     await expect(downloadAllButton).toBeEnabled();
 
     const downloadPromise = page.waitForEvent("download");
     await downloadAllButton.click();
     const download = await downloadPromise;
 
-    expect(download.suggestedFilename()).toBe("images.zip");
+    expect(download.suggestedFilename()).toBe("compressed-images.zip");
   });
 
   test("uses WebP by default when no format is changed", async ({ page }) => {

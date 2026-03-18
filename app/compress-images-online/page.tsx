@@ -26,7 +26,7 @@ export default function CompressImagesOnlinePage() {
         },
         {
           question: "What is the upload limit?",
-          answer: "Each file can be up to 10MB, with up to 20 files per upload.",
+          answer: "Each file can be up to 10MB, with up to 10 files per upload.",
         },
         {
           question: "What format will I download?",

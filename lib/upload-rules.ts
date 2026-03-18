@@ -1,4 +1,4 @@
-export const MAX_FILES_PER_UPLOAD = 20;
+export const MAX_FILES_PER_UPLOAD = 10;
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 export const JXL_UPLOAD_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_JXL_UPLOAD === "true";
@@ -24,7 +24,8 @@ export const ALLOWED_EXTENSIONS = JXL_UPLOAD_ENABLED
   ? [...BASE_ALLOWED_EXTENSIONS, ".jxl"]
   : [...BASE_ALLOWED_EXTENSIONS];
 export const EMPTY_UPLOAD_MESSAGE = "No files were uploaded.";
-export const TOO_MANY_FILES_MESSAGE = `You can upload up to ${MAX_FILES_PER_UPLOAD} images at a time.`;
+export const TOO_MANY_FILES_MESSAGE =
+  "Free version supports up to 10 images per batch.";
 export const INVALID_FILE_TYPE_MESSAGE =
   JXL_UPLOAD_ENABLED
     ? "Only PNG, JPG, WebP, AVIF, and JXL images are supported."

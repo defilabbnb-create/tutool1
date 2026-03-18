@@ -35,10 +35,10 @@ test.describe("upload validation and errors", () => {
     );
   });
 
-  test("rejects selecting more than 20 files", async ({ page }) => {
+  test("rejects selecting more than 10 files", async ({ page }) => {
     await gotoWithRetry(page, "/");
     const png = await createPngPayload("tiny.png", 24, 24);
-    const files = Array.from({ length: 21 }, (_, index) => ({
+    const files = Array.from({ length: 11 }, (_, index) => ({
       ...png,
       name: `tiny-${index + 1}.png`,
     }));
@@ -46,7 +46,7 @@ test.describe("upload validation and errors", () => {
     await page.locator('input[type="file"]').setInputFiles(files);
 
     await expect(
-      page.getByText("You can upload up to 20 images at a time.")
+      page.getByText("Free version supports up to 10 images per batch.")
     ).toBeVisible();
   });
 

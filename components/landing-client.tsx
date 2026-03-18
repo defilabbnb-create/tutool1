@@ -208,6 +208,13 @@ export function LandingClient({
         const formData = new FormData();
         formData.append("file", file);
         formData.append("format", selectedFormat);
+        updateItem(id, (item) => ({
+          ...item,
+          status: "loading",
+          progress: 0,
+          stage: "uploading",
+          error: undefined,
+        }));
         setItemProgress(id, 6, "uploading");
 
         const data = await new Promise<CompressionSuccessResponse>((resolve, reject) => {
@@ -453,9 +460,7 @@ export function LandingClient({
         id: createItemId(),
         fileName: file.name,
         originalSize: file.size,
-        status: "loading",
-        progress: 0,
-        stage: "uploading",
+        status: "pending",
       }));
 
       if (validFiles.length > 0) {
@@ -566,37 +571,13 @@ export function LandingClient({
         zip.file(getUniqueFileName(item.outputName, usedNames), item.base64, {
           base64: true,
         });
-
-        item.variants?.forEach((variant) => {
-          zip.file(
-            getUniqueFileName(variant.outputName, usedNames),
-            variant.base64,
-            { base64: true }
-          );
-        });
-
-        item.formatExports?.forEach((formatExport) => {
-          zip.file(
-            getUniqueFileName(formatExport.outputName, usedNames),
-            formatExport.base64,
-            { base64: true }
-          );
-        });
-
-        item.previewOptions?.forEach((previewOption) => {
-          zip.file(
-            getUniqueFileName(previewOption.outputName, usedNames),
-            previewOption.base64,
-            { base64: true }
-          );
-        });
       });
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "images.zip";
+      link.download = "compressed-images.zip";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

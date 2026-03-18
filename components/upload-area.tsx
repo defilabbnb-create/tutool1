@@ -119,10 +119,10 @@ export function UploadArea({
       <div className="upload-helper" aria-label="Upload limits and privacy">
         <p>
           {JXL_UPLOAD_ENABLED
-            ? "Supports PNG, JPG, WebP, JXL"
-            : "Supports PNG, JPG, WebP"}
+            ? "Supports PNG, JPG, WebP, AVIF, JXL"
+            : "Supports PNG, JPG, WebP, AVIF"}
         </p>
-        <p>Max 10MB each, up to 20 files</p>
+        <p>Max 10MB each, up to 10 files</p>
         <p>
           {JXL_UPLOAD_ENABLED
             ? "JXL uploads can be downloaded as PNG or JPG"
