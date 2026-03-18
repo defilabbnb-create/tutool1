@@ -151,6 +151,7 @@ export function LandingClient({
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [selectionError, setSelectionError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [preferWebpOutput, setPreferWebpOutput] = useState(false);
   const [recentUploads, setRecentUploads] = useState<RecentUpload[]>([]);
   const [isRecentExpanded, setIsRecentExpanded] = useState(false);
   const [showBookmarkPrompt, setShowBookmarkPrompt] = useState(false);
@@ -196,6 +197,9 @@ export function LandingClient({
       try {
         const formData = new FormData();
         formData.append("file", file);
+        if (preferWebpOutput) {
+          formData.append("format", "webp");
+        }
         setItemProgress(id, 6, "uploading");
 
         const data = await new Promise<CompressionSuccessResponse>((resolve, reject) => {
@@ -353,7 +357,7 @@ export function LandingClient({
         }));
       }
     },
-    [enableRetention, setItemProgress, updateItem]
+    [enableRetention, preferWebpOutput, setItemProgress, updateItem]
   );
 
   const processUploadQueue = useCallback(
@@ -621,6 +625,8 @@ export function LandingClient({
           setSelectionError("");
           setSuccessMessage("");
         }}
+        preferWebpOutput={preferWebpOutput}
+        onPreferWebpChange={setPreferWebpOutput}
       />
       {enableRetention ? (
         <div className="recent-uploads-cta">

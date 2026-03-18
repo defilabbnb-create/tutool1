@@ -7,6 +7,10 @@ import {
   MAX_FILES_PER_UPLOAD,
   TOO_MANY_FILES_MESSAGE,
 } from "@/lib/upload-rules";
+import {
+  createWebpExport,
+  optimizeLosslessRasterImage,
+} from "@/lib/lossless-optimizer";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { execFile } from "node:child_process";
 import { promises as fs } from "node:fs";
@@ -119,6 +123,15 @@ function normalizeMimeType(mimeType: string) {
   }
 
   return mimeType;
+}
+
+function wantsWebpOutput(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === "webp" || normalized === "true" || normalized === "1";
 }
 
 function isJxlUpload(fileName: string, mimeType: string) {
@@ -295,6 +308,7 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
+    const preferWebp = wantsWebpOutput(formData.get("format"));
     const fileValues = formData.getAll("file");
     const files = fileValues.filter((value): value is File => value instanceof File);
 
@@ -416,16 +430,55 @@ export async function POST(request: NextRequest) {
     }
 
     const jxlSupported = await supportsJxl();
-    const mainExport = await generateCompressedExport(
-      inputBuffer,
-      outputMimeType,
-      MAX_DIMENSION,
-      MAX_DIMENSION
-    );
-    const outputName = getFormattedOutputName(inputFile.name, outputMimeType);
+    const losslessMainExport =
+      outputMimeType === "image/jpeg" || outputMimeType === "image/png"
+        ? await optimizeLosslessRasterImage({
+            buffer: inputBuffer,
+            mimeType: outputMimeType,
+            fileName: inputFile.name,
+          })
+        : null;
+    const mainExport =
+      losslessMainExport ??
+      (await generateCompressedExport(
+        inputBuffer,
+        outputMimeType,
+        MAX_DIMENSION,
+        MAX_DIMENSION
+      ));
+    const requestedWebpExport =
+      preferWebp && (outputMimeType === "image/jpeg" || outputMimeType === "image/png")
+        ? await createWebpExport({
+            buffer: inputBuffer,
+            fileName: inputFile.name,
+          })
+        : null;
+    const responseMimeType = requestedWebpExport ? "image/webp" : outputMimeType;
+    const responseOutputName = getFormattedOutputName(inputFile.name, responseMimeType);
     const formatExports = await Promise.all(
-      getAlternativeMimeTypes(outputMimeType, jxlSupported).map(
+      getAlternativeMimeTypes(outputMimeType, jxlSupported)
+        .filter((formatMimeType) => !(requestedWebpExport && formatMimeType === "image/webp"))
+        .map(
         async (formatMimeType) => {
+          if (formatMimeType === "image/webp") {
+            const webpExport =
+              requestedWebpExport ??
+              (await createWebpExport({
+                buffer: inputBuffer,
+                fileName: inputFile.name,
+              }));
+
+            return {
+              label: "WebP",
+              outputName: getFormattedOutputName(inputFile.name, "image/webp"),
+              compressedSize: webpExport.size,
+              width: webpExport.width,
+              height: webpExport.height,
+              mimeType: "image/webp",
+              base64: webpExport.buffer.toString("base64"),
+            };
+          }
+
           const alternativeExport = await generateCompressedExport(
             inputBuffer,
             formatMimeType,
@@ -476,19 +529,28 @@ export async function POST(request: NextRequest) {
 
     const response: CompressionResponse = {
       originalName: inputFile.name,
-      outputName,
+      outputName: responseOutputName,
       originalSize: inputFile.size,
-      compressedSize: mainExport.size,
-      savedPercent: getSavedPercent(inputFile.size, mainExport.size),
-      mimeType: outputMimeType,
-      base64: mainExport.buffer.toString("base64"),
-      width: mainExport.width,
-      height: mainExport.height,
+      compressedSize: requestedWebpExport?.size ?? mainExport.size,
+      savedPercent: getSavedPercent(
+        inputFile.size,
+        requestedWebpExport?.size ?? mainExport.size
+      ),
+      mimeType: responseMimeType,
+      base64: (requestedWebpExport?.buffer ?? mainExport.buffer).toString("base64"),
+      width: requestedWebpExport?.width ?? mainExport.width,
+      height: requestedWebpExport?.height ?? mainExport.height,
       variants,
       formatExports,
-      formatMessage: jxlSupported
-        ? "JPEG-XL is available for download, along with WebP and PNG."
-        : "JPEG-XL is not available in this environment yet. WebP and PNG are ready instead.",
+      formatMessage: [
+        losslessMainExport?.message,
+        requestedWebpExport?.message,
+        jxlSupported
+          ? "JPEG-XL is available for download, along with WebP and PNG."
+          : "JPEG-XL is not available in this environment yet. WebP and PNG are ready instead.",
+      ]
+        .filter(Boolean)
+        .join(" "),
     };
 
     return NextResponse.json(response);

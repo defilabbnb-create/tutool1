@@ -20,6 +20,8 @@ type UploadAreaProps = {
   errorMessage?: string;
   successMessage?: string;
   onDismissMessage?: () => void;
+  preferWebpOutput?: boolean;
+  onPreferWebpChange?: (checked: boolean) => void;
 };
 
 export function UploadArea({
@@ -27,6 +29,8 @@ export function UploadArea({
   errorMessage,
   successMessage,
   onDismissMessage,
+  preferWebpOutput = false,
+  onPreferWebpChange,
 }: UploadAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -113,6 +117,19 @@ export function UploadArea({
         </p>
         <p>Processed instantly and not stored</p>
       </div>
+      <label
+        className="upload-format-toggle"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <input
+          type="checkbox"
+          checked={preferWebpOutput}
+          onChange={(event) => onPreferWebpChange?.(event.target.checked)}
+        />
+        <span>
+          Prefer WebP output for smaller downloads
+        </span>
+      </label>
       {errorMessage ? (
         <div className="upload-message upload-message-error" role="alert">
           <p className="upload-message-text">{errorMessage}</p>
