@@ -96,6 +96,11 @@ function createError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
+function isMultipartFormRequest(request: NextRequest) {
+  const contentType = request.headers.get("content-type") ?? "";
+  return contentType.toLowerCase().includes("multipart/form-data");
+}
+
 function getSavedPercent(originalSize: number, compressedSize: number) {
   if (originalSize <= 0) {
     return 0;
@@ -331,6 +336,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!isMultipartFormRequest(request)) {
+      return createError("Please upload a valid image file.");
+    }
+
+    console.info("Compression request started", {
+      clientIdentifier,
+    });
+
     const formData = await request.formData();
     const requestedFormat = getRequestedOutputFormat(formData.get("format"));
     const fileValues = formData.getAll("file");
@@ -363,6 +376,10 @@ export async function POST(request: NextRequest) {
     }
 
     const inputBuffer = Buffer.from(await inputFile.arrayBuffer());
+
+    if (inputBuffer.length === 0) {
+      return createError(EMPTY_UPLOAD_MESSAGE);
+    }
     const inputIsJxl =
       JXL_UPLOAD_ENABLED && isJxlUpload(inputFile.name, inputFile.type);
 

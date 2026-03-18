@@ -11,6 +11,13 @@ export type NotifyRepository = {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const MAX_EMAIL_LENGTH = 320;
+const ALLOWED_NOTIFY_SOURCES = new Set([
+  "website",
+  "upgrade-limit",
+  "upgrade-post-success",
+  "upgrade-repeat-user",
+]);
 const testEmailStore = new Set<string>();
 
 function canUseLocalTestFallback() {
@@ -123,8 +130,27 @@ export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+export function normalizeNotifySource(source: string) {
+  const normalizedSource = source.trim().toLowerCase();
+
+  if (ALLOWED_NOTIFY_SOURCES.has(normalizedSource)) {
+    return normalizedSource;
+  }
+
+  return "website";
+}
+
 export function isValidNotifyEmail(email: string) {
-  return EMAIL_PATTERN.test(normalizeEmail(email));
+  const normalizedEmail = normalizeEmail(email);
+
+  if (
+    normalizedEmail.length === 0 ||
+    normalizedEmail.length > MAX_EMAIL_LENGTH
+  ) {
+    return false;
+  }
+
+  return EMAIL_PATTERN.test(normalizedEmail);
 }
 
 export async function saveNotifyEmail(
@@ -133,7 +159,8 @@ export async function saveNotifyEmail(
   repository: NotifyRepository = createSupabaseNotifyRepository()
 ): Promise<NotifySaveResult> {
   const normalizedEmail = normalizeEmail(email);
-  const status = await repository.insertEmail(normalizedEmail, source);
+  const normalizedSource = normalizeNotifySource(source);
+  const status = await repository.insertEmail(normalizedEmail, normalizedSource);
 
   return { status };
 }

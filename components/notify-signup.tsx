@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 
 type NotifySignupProps = {
   visible: boolean;
@@ -18,11 +18,16 @@ export function NotifySignup({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const trimmedEmail = useMemo(() => email.trim(), [email]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isSubmittingRef.current) {
+      return;
+    }
 
     if (!trimmedEmail) {
       setError("Please enter your email to get notified.");
@@ -30,6 +35,7 @@ export function NotifySignup({
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setError("");
     setMessage("");
@@ -58,6 +64,7 @@ export function NotifySignup({
     } catch {
       setError("Unable to save your email right now. Please try again.");
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -85,6 +92,7 @@ export function NotifySignup({
           placeholder="Email address"
           autoComplete="email"
           inputMode="email"
+          disabled={isSubmitting}
         />
         <button
           type="submit"

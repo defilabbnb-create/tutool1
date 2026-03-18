@@ -27,6 +27,7 @@ type UploadAreaProps = {
   selectedFormat?: OutputFormatOption;
   onSelectedFormatChange?: (format: OutputFormatOption) => void;
   messageSupplement?: ReactNode;
+  disabled?: boolean;
 };
 
 export function UploadArea({
@@ -37,12 +38,17 @@ export function UploadArea({
   selectedFormat = "webp",
   onSelectedFormatChange,
   messageSupplement,
+  disabled = false,
 }: UploadAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedCount, setSelectedCount] = useState(0);
 
   const handleSelectedFiles = (fileList: FileList) => {
+    if (disabled) {
+      return;
+    }
+
     const files = Array.from(fileList);
     setSelectedCount(files.length);
     onFilesSelected(files);
@@ -51,6 +57,9 @@ export function UploadArea({
   const onDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
+    if (disabled) {
+      return;
+    }
     handleSelectedFiles(event.dataTransfer.files);
   };
 
@@ -90,15 +99,23 @@ export function UploadArea({
 
   return (
     <section
-      className={`upload-area ${isDragging ? "is-dragging" : ""}`}
-      onClick={() => inputRef.current?.click()}
+      className={`upload-area ${isDragging ? "is-dragging" : ""} ${disabled ? "is-disabled" : ""}`}
+      onClick={() => {
+        if (!disabled) {
+          inputRef.current?.click();
+        }
+      }}
       onDrop={onDrop}
       onDragOver={onDragOver}
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
       role="button"
       tabIndex={0}
+      aria-disabled={disabled}
       onKeyDown={(event) => {
+        if (disabled) {
+          return;
+        }
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           inputRef.current?.click();
@@ -112,10 +129,15 @@ export function UploadArea({
         accept={acceptTypes}
         multiple
         onChange={onFileChange}
+        disabled={disabled}
       />
-      <p className="upload-title">Drop your images here or click to upload</p>
+      <p className="upload-title">
+        {disabled ? "Processing..." : "Drop your images here or click to upload"}
+      </p>
       <p className="upload-subtitle">
-        We&apos;ll optimize them for the format you choose and get them ready to download in seconds.
+        {disabled
+          ? "Please wait while your current files are being processed."
+          : "We&apos;ll optimize them for the format you choose and get them ready to download in seconds."}
       </p>
       <p className="upload-meta">{formatSelectionText(selectedCount)}</p>
       <div className="upload-helper" aria-label="Upload limits and privacy">
@@ -143,6 +165,7 @@ export function UploadArea({
           id="upload-format-select"
           className="upload-format-select"
           value={selectedFormat}
+          disabled={disabled}
           onChange={(event) =>
             onSelectedFormatChange?.(event.target.value as OutputFormatOption)
           }

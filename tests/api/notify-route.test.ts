@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { handleNotifyRequest } from "../../lib/notify-route-utils";
+import { resetRateLimitStore } from "../../lib/rate-limit";
+
+test.beforeEach(() => {
+  resetRateLimitStore();
+});
 
 test("POST /api/notify returns success for valid emails", async () => {
   const result = await handleNotifyRequest(
@@ -62,5 +67,32 @@ test("POST /api/notify accepts source metadata without changing UX response", as
     success: true,
     message: "Thanks! We’ll notify you when batch compression is ready.",
     duplicate: false,
+  });
+});
+
+test("POST /api/notify applies a friendly rate limit", async () => {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const result = await handleNotifyRequest(
+      { email: `person${attempt}@example.com` },
+      async () => ({
+        status: "inserted",
+      }),
+      { clientIdentifier: "198.51.100.30" }
+    );
+
+    assert.equal(result.status, 200);
+  }
+
+  const limitedResult = await handleNotifyRequest(
+    { email: "person4@example.com" },
+    async () => ({
+      status: "inserted",
+    }),
+    { clientIdentifier: "198.51.100.30" }
+  );
+
+  assert.equal(limitedResult.status, 429);
+  assert.deepEqual(limitedResult.body, {
+    error: "Too many requests. Please wait a moment and try again.",
   });
 });

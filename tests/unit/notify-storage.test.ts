@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   isValidNotifyEmail,
   normalizeEmail,
+  normalizeNotifySource,
   saveNotifyEmail,
   type NotifyRepository,
 } from "../../lib/notify-storage";
@@ -15,6 +16,12 @@ test("normalizeEmail trims and lowercases", () => {
 test("isValidNotifyEmail validates basic addresses", () => {
   assert.equal(isValidNotifyEmail("person@example.com"), true);
   assert.equal(isValidNotifyEmail("bad-email"), false);
+  assert.equal(isValidNotifyEmail("x".repeat(330) + "@example.com"), false);
+});
+
+test("normalizeNotifySource falls back to website for unknown values", () => {
+  assert.equal(normalizeNotifySource("upgrade-limit"), "upgrade-limit");
+  assert.equal(normalizeNotifySource("SOMETHING-ELSE"), "website");
 });
 
 test("saveNotifyEmail stores normalized emails", async () => {

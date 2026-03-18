@@ -74,6 +74,9 @@ test.describe("upload workflow", () => {
 
     await expect(page.getByText(/Uploading your image|Processing your image/i)).toBeVisible();
     await expect(page.locator(".result-progress")).toBeVisible();
+    await expect(page.getByText("Processing...")).toBeVisible();
+    await expect(page.locator(".upload-area")).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByLabel("Output format")).toBeDisabled();
 
     const successItem = await waitForLatestSuccess(page);
     await expect(
@@ -89,6 +92,8 @@ test.describe("upload workflow", () => {
     expect(parseFormattedBytes(compressedValue)).toBeGreaterThan(0);
     expect(parseFormattedBytes(compressedValue)).toBeLessThanOrEqual(originalSize);
     await expect(successItem.locator(".download-button")).toBeVisible();
+    await expect(page.locator(".upload-area")).toHaveAttribute("aria-disabled", "false");
+    await expect(page.getByLabel("Output format")).toBeEnabled();
   });
 
   test("processes multiple files and enables ZIP download", async ({ page }) => {
@@ -290,6 +295,50 @@ test.describe("upload workflow", () => {
 
     await notifySection.getByLabel("Notify email").fill("person@example.com");
     await notifySection.getByRole("button", { name: "Notify me" }).click();
+    await expect(
+      notifySection.getByRole("button", { name: "Saving..." })
+    ).toBeDisabled();
+    await expect(
+      notifySection.getByText(
+        "Thanks! We’ll notify you when batch compression is ready."
+      )
+    ).toBeVisible({ timeout: 15000 });
+  });
+
+  test("prevents notify double submit and shows loading state", async ({ page }) => {
+    const png = await createPngPayload("notify-loading.png", 600, 600);
+    let notifyRequestCount = 0;
+
+    await page.route("**/api/notify", async (route) => {
+      notifyRequestCount += 1;
+      await page.waitForTimeout(500);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          message: "Thanks! We’ll notify you when batch compression is ready.",
+          duplicate: false,
+        }),
+      });
+    });
+
+    await preparePage(page);
+    await uploadFiles(page, [png]);
+    await waitForLatestSuccess(page);
+
+    const notifySection = page.getByRole("region", {
+      name: "Batch tools updates",
+    });
+    await notifySection.getByLabel("Notify email").fill("person@example.com");
+    const submitButton = notifySection.getByRole("button", { name: "Notify me" });
+
+    await submitButton.click();
+    await expect(
+      notifySection.getByRole("button", { name: "Saving..." })
+    ).toBeDisabled();
+    await expect(notifySection.getByLabel("Notify email")).toBeDisabled();
+    await expect.poll(() => notifyRequestCount).toBe(1);
     await expect(
       notifySection.getByText(
         "Thanks! We’ll notify you when batch compression is ready."

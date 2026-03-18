@@ -1,8 +1,8 @@
-const WINDOW_MS = 60_000;
-const MAX_REQUESTS_PER_WINDOW = 30;
-const BURST_WINDOW_MS = 10_000;
-const MAX_REQUESTS_PER_BURST = 20;
-const STORE_TTL_MS = 5 * WINDOW_MS;
+const DEFAULT_WINDOW_MS = 60_000;
+const DEFAULT_MAX_REQUESTS_PER_WINDOW = 30;
+const DEFAULT_BURST_WINDOW_MS = 10_000;
+const DEFAULT_MAX_REQUESTS_PER_BURST = 20;
+const STORE_TTL_MS = 5 * DEFAULT_WINDOW_MS;
 
 type RequestTimestamps = {
   timestamps: number[];
@@ -10,6 +10,14 @@ type RequestTimestamps = {
 };
 
 const requestStore = new Map<string, RequestTimestamps>();
+
+type RateLimitOptions = {
+  bucket?: string;
+  windowMs?: number;
+  maxRequestsPerWindow?: number;
+  burstWindowMs?: number;
+  maxRequestsPerBurst?: number;
+};
 
 function pruneOldEntries(now: number) {
   for (const [key, value] of requestStore.entries()) {
@@ -53,31 +61,40 @@ export function getClientIdentifier(headers: Headers) {
   return userAgent ? `unknown:${userAgent}` : "unknown";
 }
 
-export function checkRateLimit(identifier: string) {
+export function checkRateLimit(identifier: string, options: RateLimitOptions = {}) {
   const now = Date.now();
   pruneOldEntries(now);
 
-  const existing = requestStore.get(identifier);
+  const bucket = options.bucket ?? "default";
+  const windowMs = options.windowMs ?? DEFAULT_WINDOW_MS;
+  const maxRequestsPerWindow =
+    options.maxRequestsPerWindow ?? DEFAULT_MAX_REQUESTS_PER_WINDOW;
+  const burstWindowMs = options.burstWindowMs ?? DEFAULT_BURST_WINDOW_MS;
+  const maxRequestsPerBurst =
+    options.maxRequestsPerBurst ?? DEFAULT_MAX_REQUESTS_PER_BURST;
+  const scopedIdentifier = `${bucket}:${identifier}`;
+
+  const existing = requestStore.get(scopedIdentifier);
   const timestamps = existing?.timestamps ?? [];
-  const recentWindowTimestamps = getRecentCount(timestamps, now, WINDOW_MS);
+  const recentWindowTimestamps = getRecentCount(timestamps, now, windowMs);
   const recentBurstTimestamps = getRecentCount(
     recentWindowTimestamps,
     now,
-    BURST_WINDOW_MS
+    burstWindowMs
   );
 
-  const burstBlocked = recentBurstTimestamps.length >= MAX_REQUESTS_PER_BURST;
-  const windowBlocked = recentWindowTimestamps.length >= MAX_REQUESTS_PER_WINDOW;
+  const burstBlocked = recentBurstTimestamps.length >= maxRequestsPerBurst;
+  const windowBlocked = recentWindowTimestamps.length >= maxRequestsPerWindow;
 
   if (burstBlocked || windowBlocked) {
     const activeTimestamps = burstBlocked
       ? recentBurstTimestamps
       : recentWindowTimestamps;
-    const windowMs = burstBlocked ? BURST_WINDOW_MS : WINDOW_MS;
+    const activeWindowMs = burstBlocked ? burstWindowMs : windowMs;
     const oldestTimestamp = activeTimestamps[0] ?? now;
-    const retryAfterMs = Math.max(windowMs - (now - oldestTimestamp), 1_000);
+    const retryAfterMs = Math.max(activeWindowMs - (now - oldestTimestamp), 1_000);
 
-    requestStore.set(identifier, {
+    requestStore.set(scopedIdentifier, {
       timestamps: recentWindowTimestamps,
       lastSeenAt: now,
     });
@@ -89,7 +106,7 @@ export function checkRateLimit(identifier: string) {
   }
 
   recentWindowTimestamps.push(now);
-  requestStore.set(identifier, {
+  requestStore.set(scopedIdentifier, {
     timestamps: recentWindowTimestamps,
     lastSeenAt: now,
   });
@@ -98,4 +115,8 @@ export function checkRateLimit(identifier: string) {
     allowed: true,
     retryAfterSeconds: 0,
   };
+}
+
+export function resetRateLimitStore() {
+  requestStore.clear();
 }

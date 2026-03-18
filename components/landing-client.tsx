@@ -661,6 +661,9 @@ export function LandingClient({
   const successfulItemCount = items.filter(
     (item) => item.status === "success"
   ).length;
+  const isProcessingUploads = items.some(
+    (item) => item.status === "pending" || item.status === "loading"
+  );
   const shouldShowNotifySignup =
     showNotifySignupOverride || successfulItemCount > 0;
   const shouldShowPostSuccessUpgrade = successfulItemCount >= 2;
@@ -691,6 +694,7 @@ export function LandingClient({
         }}
         selectedFormat={selectedFormat}
         onSelectedFormatChange={setSelectedFormat}
+        disabled={isProcessingUploads}
         messageSupplement={
           selectionError === TOO_MANY_FILES_MESSAGE ? (
             <UpgradeEntry
