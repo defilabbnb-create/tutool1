@@ -118,6 +118,55 @@ test.describe("upload workflow", () => {
     expect(download.suggestedFilename()).toBe("compressed-images.zip");
   });
 
+  test("shows upgrade entry when exceeding batch limit", async ({ page }) => {
+    const png = await createPngPayload("tiny.png", 24, 24);
+    const files = Array.from({ length: 11 }, (_, index) => ({
+      ...png,
+      name: `tiny-${index + 1}.png`,
+    }));
+
+    await preparePage(page);
+    await uploadFiles(page, files);
+
+    await expect(
+      page.getByText("Free version supports up to 10 images per batch.")
+    ).toBeVisible();
+    await expect(
+      page.getByText("Need to compress more than 10 images?")
+    ).toBeVisible();
+    const limitUpgradeEntry = page.locator(".upgrade-entry").filter({
+      hasText: "Need to compress more than 10 images?",
+    });
+
+    await limitUpgradeEntry.getByRole("button", { name: "Notify me" }).click();
+    await expect(page.locator("#notify-section")).toBeInViewport();
+  });
+
+  test("shows upgrade entry after batch success", async ({ page }) => {
+    const first = await createPngPayload("batch-one.png", 360, 360);
+    const second = await createPngPayload("batch-two.png", 420, 420);
+    const third = await createPngPayload("batch-three.png", 480, 480);
+
+    await preparePage(page);
+    await uploadFiles(page, [first, second, third]);
+
+    await expect(page.locator(".result-item-success")).toHaveCount(3, {
+      timeout: 30000,
+    });
+    await expect(
+      page.getByRole("button", { name: "Download All (.zip)" })
+    ).toBeVisible();
+    const postSuccessUpgradeEntry = page.locator(".upgrade-entry").filter({
+      hasText: "Compressing many images?",
+    });
+    await expect(postSuccessUpgradeEntry).toBeVisible();
+    await expect(
+      postSuccessUpgradeEntry.getByText(
+        "We’re building faster batch processing and API access."
+      )
+    ).toBeVisible();
+  });
+
   test("uses WebP by default when no format is changed", async ({ page }) => {
     const png = await createPngPayload("default-format.png", 600, 600);
 
@@ -239,6 +288,34 @@ test.describe("upload workflow", () => {
       notifySection.getByText("Enter your email to get notified.")
     ).toBeVisible();
 
+    await notifySection.getByLabel("Notify email").fill("person@example.com");
+    await notifySection.getByRole("button", { name: "Notify me" }).click();
+    await expect(
+      notifySection.getByText(
+        "Thanks! We’ll notify you when batch compression is ready."
+      )
+    ).toBeVisible({ timeout: 15000 });
+  });
+
+  test("notify still works from upgrade entry", async ({ page }) => {
+    const png = await createPngPayload("upgrade-limit.png", 24, 24);
+    const files = Array.from({ length: 11 }, (_, index) => ({
+      ...png,
+      name: `upgrade-limit-${index + 1}.png`,
+    }));
+
+    await preparePage(page);
+    await uploadFiles(page, files);
+
+    const limitUpgradeEntry = page.locator(".upgrade-entry").filter({
+      hasText: "Need to compress more than 10 images?",
+    });
+    await limitUpgradeEntry.getByRole("button", { name: "Notify me" }).click();
+
+    const notifySection = page.getByRole("region", {
+      name: "Batch tools updates",
+    });
+    await expect(notifySection).toBeVisible();
     await notifySection.getByLabel("Notify email").fill("person@example.com");
     await notifySection.getByRole("button", { name: "Notify me" }).click();
     await expect(

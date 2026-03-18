@@ -531,6 +531,56 @@ body {
   padding: 0.95rem 1rem;
 }
 
+.upgrade-entry {
+  width: min(760px, 100%);
+  margin: 0.75rem auto 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #f7f7f7;
+  padding: 0.85rem 0.95rem;
+}
+
+.upgrade-entry-title,
+.upgrade-entry-description {
+  margin: 0;
+}
+
+.upgrade-entry-title {
+  color: #262626;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.upgrade-entry-description {
+  margin-top: 0.3rem;
+  color: var(--muted-text);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.upgrade-entry-button {
+  margin-top: 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--page-text);
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+}
+
+.upgrade-entry-button:hover {
+  background: #ffffff;
+}
+
+.upgrade-entry-button:focus-visible {
+  outline: none;
+  border-color: #111111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
 .notify-signup-title,
 .notify-signup-success,
 .notify-signup-error {

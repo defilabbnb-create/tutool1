@@ -7,7 +7,7 @@ export type NotifySaveResult = {
 };
 
 export type NotifyRepository = {
-  insertEmail: (email: string) => Promise<NotifyInsertStatus>;
+  insertEmail: (email: string, source: string) => Promise<NotifyInsertStatus>;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -36,14 +36,14 @@ function createSupabaseNotifyRepository(): NotifyRepository {
   }
 
   return {
-    async insertEmail(email: string) {
+    async insertEmail(email: string, source: string) {
       const supabase = getSupabaseAdminClient();
       const { error } = await supabase
         .from("notify_emails")
         .insert(
           {
             email,
-            source: "website",
+            source,
           }
         );
 
@@ -70,10 +70,11 @@ export function isValidNotifyEmail(email: string) {
 
 export async function saveNotifyEmail(
   email: string,
+  source = "website",
   repository: NotifyRepository = createSupabaseNotifyRepository()
 ): Promise<NotifySaveResult> {
   const normalizedEmail = normalizeEmail(email);
-  const status = await repository.insertEmail(normalizedEmail);
+  const status = await repository.insertEmail(normalizedEmail, source);
 
   return { status };
 }

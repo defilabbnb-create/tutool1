@@ -4,12 +4,16 @@ import { FormEvent, useMemo, useState } from "react";
 
 type NotifySignupProps = {
   visible: boolean;
+  source?: string;
 };
 
 const SUCCESS_MESSAGE =
   "Thanks! We’ll notify you when batch compression is ready.";
 
-export function NotifySignup({ visible }: NotifySignupProps) {
+export function NotifySignup({
+  visible,
+  source = "website",
+}: NotifySignupProps) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -36,7 +40,7 @@ export function NotifySignup({ visible }: NotifySignupProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: trimmedEmail }),
+        body: JSON.stringify({ email: trimmedEmail, source }),
       });
 
       const data = (await response.json()) as {
@@ -63,7 +67,11 @@ export function NotifySignup({ visible }: NotifySignupProps) {
   }
 
   return (
-    <section className="notify-signup" aria-label="Batch tools updates">
+    <section
+      id="notify-section"
+      className="notify-signup"
+      aria-label="Batch tools updates"
+    >
       <p className="notify-signup-title">
         Compressing many images? We’re building batch tools and API access.
       </p>

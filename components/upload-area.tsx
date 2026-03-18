@@ -5,7 +5,7 @@ import {
   OUTPUT_FORMAT_OPTIONS,
   OutputFormatOption,
 } from "@/lib/upload-rules";
-import { ChangeEvent, DragEvent, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, ReactNode, useRef, useState } from "react";
 
 function formatSelectionText(count: number) {
   if (count === 0) {
@@ -26,6 +26,7 @@ type UploadAreaProps = {
   onDismissMessage?: () => void;
   selectedFormat?: OutputFormatOption;
   onSelectedFormatChange?: (format: OutputFormatOption) => void;
+  messageSupplement?: ReactNode;
 };
 
 export function UploadArea({
@@ -35,6 +36,7 @@ export function UploadArea({
   onDismissMessage,
   selectedFormat = "webp",
   onSelectedFormatChange,
+  messageSupplement,
 }: UploadAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -171,6 +173,7 @@ export function UploadArea({
           ) : null}
         </div>
       ) : null}
+      {errorMessage && messageSupplement ? messageSupplement : null}
       {!errorMessage && successMessage ? (
         <div className="upload-message upload-message-success" role="status">
           <p className="upload-message-text">{successMessage}</p>

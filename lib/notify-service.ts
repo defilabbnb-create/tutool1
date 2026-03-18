@@ -8,7 +8,8 @@ export const NOTIFY_SERVER_ERROR_MESSAGE =
 
 export async function submitNotifyEmail(
   email: string,
-  saveEmail: typeof saveNotifyEmail = saveNotifyEmail
+  saveEmail: typeof saveNotifyEmail = saveNotifyEmail,
+  source = "website"
 ) {
   if (!isValidNotifyEmail(email)) {
     return {
@@ -20,7 +21,7 @@ export async function submitNotifyEmail(
   }
 
   try {
-    const result = await saveEmail(email);
+    const result = await saveEmail(email, source);
 
     return {
       status: 200,

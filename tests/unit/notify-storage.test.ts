@@ -19,17 +19,24 @@ test("isValidNotifyEmail validates basic addresses", () => {
 
 test("saveNotifyEmail stores normalized emails", async () => {
   let capturedEmail = "";
+  let capturedSource = "";
 
   const repository: NotifyRepository = {
-    async insertEmail(email: string) {
+    async insertEmail(email: string, source: string) {
       capturedEmail = email;
+      capturedSource = source;
       return "inserted";
     },
   };
 
-  const result = await saveNotifyEmail(" Test@Example.com ", repository);
+  const result = await saveNotifyEmail(
+    " Test@Example.com ",
+    "upgrade-limit",
+    repository
+  );
 
   assert.equal(capturedEmail, "test@example.com");
+  assert.equal(capturedSource, "upgrade-limit");
   assert.equal(result.status, "inserted");
 });
 
@@ -40,7 +47,11 @@ test("saveNotifyEmail reports duplicates gracefully", async () => {
     },
   };
 
-  const result = await saveNotifyEmail("test@example.com", repository);
+  const result = await saveNotifyEmail(
+    "test@example.com",
+    "website",
+    repository
+  );
 
   assert.equal(result.status, "duplicate");
 });

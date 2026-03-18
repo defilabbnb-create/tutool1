@@ -5,6 +5,7 @@ import { FeaturePoints } from "@/components/feature-points";
 import { Header } from "@/components/header";
 import { NotifySignup } from "@/components/notify-signup";
 import { RecentUploads } from "@/components/recent-uploads";
+import { UpgradeEntry, scrollToNotifySection } from "@/components/upgrade-entry";
 import {
   ExportVariant,
   FormatExport,
@@ -60,6 +61,7 @@ const GENERIC_UPLOAD_ERROR =
   "Oops, something went wrong. Please try again later.";
 const SUCCESS_MESSAGE =
   "Your image has been successfully compressed. Download it below.";
+const REPEAT_BATCH_STORAGE_KEY = "tumvp-batch-completion-count";
 
 type LandingClientProps = {
   title: string;
@@ -166,6 +168,9 @@ export function LandingClient({
   const [isRecentExpanded, setIsRecentExpanded] = useState(false);
   const [showBookmarkPrompt, setShowBookmarkPrompt] = useState(false);
   const [hasShownBookmarkHint, setHasShownBookmarkHint] = useState(false);
+  const [showNotifySignupOverride, setShowNotifySignupOverride] = useState(false);
+  const [notifySource, setNotifySource] = useState("website");
+  const [completedBatchCount, setCompletedBatchCount] = useState(0);
   const hasTrackedVisit = useRef(false);
 
   useEffect(() => {
@@ -184,6 +189,19 @@ export function LandingClient({
 
     setRecentUploads(loadRecentUploads());
   }, [enableRetention]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storedValue = window.localStorage.getItem(REPEAT_BATCH_STORAGE_KEY);
+    const parsedValue = Number(storedValue);
+
+    if (!Number.isNaN(parsedValue) && parsedValue > 0) {
+      setCompletedBatchCount(parsedValue);
+    }
+  }, []);
 
   const updateItem = useCallback((id: string, updater: (item: UploadItem) => UploadItem) => {
     setItems((currentItems) =>
@@ -413,6 +431,7 @@ export function LandingClient({
       if (files.length > MAX_FILES_PER_UPLOAD) {
         setSelectionError(TOO_MANY_FILES_MESSAGE);
         setSuccessMessage("");
+        setNotifySource("upgrade-limit");
         trackEvent(analyticsEvents.uploadFailed, {
           reason: "too_many_files",
         });
@@ -470,12 +489,27 @@ export function LandingClient({
       }
 
       setItems((currentItems) => [...newItems, ...invalidItems, ...currentItems]);
-      void processUploadQueue(
+      const queuePromise = processUploadQueue(
         newItems.map((item, index) => ({
           file: validFiles[index],
           id: item.id,
         }))
       );
+
+      void queuePromise.then(() => {
+        if (validFiles.length < 2 || typeof window === "undefined") {
+          return;
+        }
+
+        setCompletedBatchCount((currentCount) => {
+          const nextCount = currentCount + 1;
+          window.localStorage.setItem(
+            REPEAT_BATCH_STORAGE_KEY,
+            String(nextCount)
+          );
+          return nextCount;
+        });
+      });
     },
     [processUploadQueue]
   );
@@ -593,6 +627,14 @@ export function LandingClient({
     }
   }, [enableRetention, items]);
 
+  const openNotifySection = useCallback((source: string) => {
+    setNotifySource(source);
+    setShowNotifySignupOverride(true);
+    window.requestAnimationFrame(() => {
+      scrollToNotifySection();
+    });
+  }, []);
+
   const handleRecentRecompress = useCallback(
     (item: RecentUpload) => {
       const recentBlob = base64ToBlob(item.base64, item.mimeType);
@@ -616,7 +658,14 @@ export function LandingClient({
   );
 
   const canDownloadAll = items.some((item) => item.status === "success");
-  const shouldShowNotifySignup = items.some((item) => item.status === "success");
+  const successfulItemCount = items.filter(
+    (item) => item.status === "success"
+  ).length;
+  const shouldShowNotifySignup =
+    showNotifySignupOverride || successfulItemCount > 0;
+  const shouldShowPostSuccessUpgrade = successfulItemCount >= 2;
+  const shouldShowRepeatUserUpgrade =
+    !shouldShowPostSuccessUpgrade && completedBatchCount >= 2;
 
   return (
     <main className="page">
@@ -642,6 +691,14 @@ export function LandingClient({
         }}
         selectedFormat={selectedFormat}
         onSelectedFormatChange={setSelectedFormat}
+        messageSupplement={
+          selectionError === TOO_MANY_FILES_MESSAGE ? (
+            <UpgradeEntry
+              variant="limit"
+              onNotifyClick={() => openNotifySection("upgrade-limit")}
+            />
+          ) : null
+        }
       />
       {uploadNote ? (
         <section className="upload-note" aria-label="Image compression formats">
@@ -713,8 +770,21 @@ export function LandingClient({
         onDownloadAll={handleDownloadAll}
         canDownloadAll={canDownloadAll}
         isDownloadingAll={isDownloadingAll}
+        upgradeEntry={
+          shouldShowPostSuccessUpgrade ? (
+            <UpgradeEntry
+              variant="post-success"
+              onNotifyClick={() => openNotifySection("upgrade-post-success")}
+            />
+          ) : shouldShowRepeatUserUpgrade ? (
+            <UpgradeEntry
+              variant="repeat-user"
+              onNotifyClick={() => openNotifySection("upgrade-repeat-user")}
+            />
+          ) : null
+        }
       />
-      <NotifySignup visible={shouldShowNotifySignup} />
+      <NotifySignup visible={shouldShowNotifySignup} source={notifySource} />
     </main>
   );
 }

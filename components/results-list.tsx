@@ -63,6 +63,7 @@ type ResultsListProps = {
   onDownloadAll: () => void;
   canDownloadAll: boolean;
   isDownloadingAll: boolean;
+  upgradeEntry?: ReactNode;
 };
 
 function getFormatLabel(mimeType?: string) {
@@ -162,6 +163,7 @@ export function ResultsList({
   onDownloadAll,
   canDownloadAll,
   isDownloadingAll,
+  upgradeEntry,
 }: ResultsListProps) {
   return (
     <section className="results" aria-label="Compression results">
@@ -176,6 +178,7 @@ export function ResultsList({
           {isDownloadingAll ? "Preparing ZIP..." : "Download All (.zip)"}
         </button>
       </div>
+      {upgradeEntry}
 
       {items.length === 0 ? (
         <div className="results-empty">
@@ -450,3 +453,4 @@ export function ResultsList({
     </section>
   );
 }
+import { ReactNode } from "react";
