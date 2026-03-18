@@ -31,9 +31,13 @@ export function HomeClient() {
 
   return (
     <LandingClient
-      title="Make Your Images Lighter in Seconds"
+      title="Free Online Image Compressor"
       subtitle="Compress, convert, and optimize PNG, JPG, WebP, and AVIF images for the web — instantly."
       intro="PixelPress keeps image cleanup simple. Upload once, choose the format you want back, and download lighter files that are ready for the web."
+      uploadNote={{
+        title: "Compress PNG, JPG, WebP, and AVIF in one place",
+        text: "Upload PNG, JPG, WebP, or AVIF and choose the format you want back. WebP and AVIF are usually smaller than PNG or JPG, so they help reduce image size while keeping strong visual quality for the web.",
+      }}
       featurePoints={featurePoints}
       benefitTitle="Why PixelPress?"
       benefits={[

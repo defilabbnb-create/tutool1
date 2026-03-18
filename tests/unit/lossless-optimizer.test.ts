@@ -12,6 +12,10 @@ import {
   outputFormatToMimeType,
   pickSmallestCandidate,
 } from "../../lib/lossless-optimizer";
+import {
+  getFormattedOutputName,
+  getOutputExtension,
+} from "../../lib/compress-route-utils";
 
 async function createMetadataHeavyPng() {
   return sharp({
@@ -55,6 +59,16 @@ test("format mapping helpers stay in sync", () => {
   assert.equal(mimeTypeToOutputFormat("image/webp"), "webp");
   assert.equal(mimeTypeToOutputFormat("image/avif"), "avif");
   assert.equal(outputFormatToMimeType("avif"), "image/avif");
+});
+
+test("output filename helpers keep extension logic aligned with returned mime types", () => {
+  assert.equal(getOutputExtension("photo.png", "image/webp"), ".webp");
+  assert.equal(getOutputExtension("photo.jpeg", "image/jpeg"), ".jpeg");
+  assert.equal(getOutputExtension("photo.jpg", "image/jpeg"), ".jpg");
+  assert.equal(
+    getFormattedOutputName("photo.png", "image/avif"),
+    "photo.avif"
+  );
 });
 
 test("createSharpPngFallback keeps PNG pixels identical while shrinking metadata-heavy files", async () => {
@@ -114,6 +128,7 @@ test("compressWithStrategy returns WebP by default-friendly strategy", async () 
   assert.equal(result.mimeType, "image/webp");
   assert.equal(result.size > 0, true);
   assert.equal(typeof result.methodUsed, "string");
+  assert.equal(typeof result.message, "string");
 });
 
 test("compressWithStrategy can return AVIF when requested", async () => {

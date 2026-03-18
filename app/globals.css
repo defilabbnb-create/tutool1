@@ -500,6 +500,114 @@ body {
   line-height: 1.6;
 }
 
+.upload-note {
+  width: min(760px, 100%);
+  margin: 1rem auto 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 1rem 1.05rem;
+}
+
+.upload-note h2 {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+
+.upload-note p {
+  margin: 0.5rem 0 0;
+  color: var(--muted-text);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.notify-signup {
+  width: min(760px, 100%);
+  margin: 1rem auto 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fcfcfc;
+  padding: 0.95rem 1rem;
+}
+
+.notify-signup-title,
+.notify-signup-success,
+.notify-signup-error {
+  margin: 0;
+}
+
+.notify-signup-title {
+  color: #262626;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.notify-signup-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.notify-signup-input {
+  flex: 1 1 240px;
+  min-width: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--page-text);
+  font-size: 0.92rem;
+  padding: 0.72rem 0.8rem;
+}
+
+.notify-signup-input:focus-visible {
+  outline: none;
+  border-color: #111111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+.notify-signup-button {
+  border: 0;
+  border-radius: 10px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.72rem 1rem;
+  cursor: pointer;
+}
+
+.notify-signup-button:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.notify-signup-success,
+.notify-signup-error {
+  margin-top: 0.7rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.notify-signup-success {
+  color: #2f5d35;
+}
+
+.notify-signup-error {
+  color: var(--danger);
+}
+
+@media (max-width: 640px) {
+  .notify-signup-form {
+    flex-direction: column;
+  }
+
+  .notify-signup-button {
+    width: 100%;
+  }
+}
+
 .faq,
 .related-links {
   width: min(760px, 100%);
@@ -880,7 +988,8 @@ body {
 }
 
 .preview-option-item.is-recommended {
-  border-color: #d7e6d7;
+  border-color: #c7dfc7;
+  box-shadow: 0 0 0 2px rgba(164, 202, 164, 0.18);
   background: #f7fbf7;
 }
 
@@ -893,6 +1002,11 @@ body {
   flex-wrap: wrap;
 }
 
+.preview-option-copy {
+  display: grid;
+  gap: 0.18rem;
+}
+
 .preview-option-badge {
   border: 1px solid #d7e6d7;
   background: #ffffff;
@@ -901,6 +1015,12 @@ body {
   color: #2d5b2d;
   font-size: 0.7rem;
   font-weight: 600;
+}
+
+.preview-option-hint {
+  color: var(--soft-text);
+  font-size: 0.74rem;
+  line-height: 1.35;
 }
 
 .preview-option-image {

@@ -4,13 +4,14 @@ import { gotoWithRetry } from "./helpers";
 test("homepage loads and shows key UI", async ({ page }) => {
   await gotoWithRetry(page, "/");
 
-  await expect(page).toHaveTitle(/PixelPress/i);
+  await expect(page).toHaveTitle(/Free Image Compressor/i);
   await expect(
-    page.getByRole("heading", { name: "Make Your Images Lighter in Seconds" })
+    page.getByRole("heading", { name: "Free Online Image Compressor" })
   ).toBeVisible();
   await expect(
     page.getByText("Drop your images here or click to upload")
   ).toBeVisible();
+  await expect(page.getByLabel("Output format")).toBeVisible();
   await expect(page.getByText("Supports PNG, JPG, WebP")).toBeVisible();
   await expect(page.getByText("Why PixelPress?")).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy" })).toBeVisible();

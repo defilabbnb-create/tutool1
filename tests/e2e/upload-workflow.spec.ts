@@ -112,7 +112,9 @@ test.describe("upload workflow", () => {
     await expect(selector).toHaveValue("webp");
 
     await expectFormatResult(page, png, "WebP", ".webp");
-    await expect(page.getByText("Quality 80")).toBeVisible();
+    await expect(page.getByText("High quality")).toBeVisible();
+    await expect(page.getByText("Balanced")).toBeVisible();
+    await expect(page.getByText("Smallest size")).toBeVisible();
     await expect(page.getByText("Recommended lossy", { exact: true })).toBeVisible();
   });
 
@@ -163,7 +165,7 @@ test.describe("upload workflow", () => {
     expect(["selected-avif.avif", "selected-avif.webp"]).toContain(
       download.suggestedFilename()
     );
-    await expect(page.getByText("Quality 80")).toBeVisible();
+    await expect(page.getByText("High quality")).toBeVisible();
   });
 
   test("accepts AVIF uploads and can convert them to WebP", async ({ page }) => {
@@ -197,5 +199,55 @@ test.describe("upload workflow", () => {
       /Only PNG, JPG, WebP, and AVIF images are supported|Only PNG, JPG, WebP, AVIF, and JXL images are supported/i
     );
     expect(compressRequestCount).toBe(0);
+  });
+
+  test("shows notify form after success and handles invalid then valid emails", async ({
+    page,
+  }) => {
+    const png = await createPngPayload("notify.png", 600, 600);
+
+    await preparePage(page);
+    await uploadFiles(page, [png]);
+    await waitForFirstSuccess(page);
+
+    const notifySection = page.getByRole("region", {
+      name: "Batch tools updates",
+    });
+    await expect(notifySection).toBeVisible();
+    await expect(
+      notifySection.getByText(
+        "Compressing many images? We’re building batch tools and API access."
+      )
+    ).toBeVisible();
+
+    await notifySection.getByRole("button", { name: "Notify me" }).click();
+    await expect(
+      notifySection.getByText("Enter your email to get notified.")
+    ).toBeVisible();
+
+    await notifySection.getByLabel("Notify email").fill("person@example.com");
+    await notifySection.getByRole("button", { name: "Notify me" }).click();
+    await expect(
+      notifySection.getByText(
+        "Thanks! We’ll notify you when batch compression is ready."
+      )
+    ).toBeVisible({ timeout: 15000 });
+  });
+
+  test("result cards show metrics and method used", async ({ page }) => {
+    const png = await createPngPayload("metrics.png", 640, 640);
+
+    await preparePage(page);
+    await uploadFiles(page, [png]);
+
+    const successItem = await waitForFirstSuccess(page);
+    await expect(successItem.locator(".result-fact-label").getByText("Original")).toBeVisible();
+    await expect(successItem.locator(".result-fact-label").getByText("Compressed")).toBeVisible();
+    await expect(successItem.locator(".result-fact-label").getByText("Saved")).toBeVisible();
+    await expect(successItem.locator(".result-fact-label").getByText("Format")).toBeVisible();
+    await expect(successItem.locator(".result-fact-label").getByText("Method")).toBeVisible();
+    await expect(successItem.locator(".result-format-note").first()).toBeVisible();
+    await expect(page.getByText("Lossy preview options are shown below")).toBeVisible();
+    await expect(page.getByText("Best size vs quality")).toBeVisible();
   });
 });

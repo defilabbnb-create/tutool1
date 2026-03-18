@@ -17,6 +17,10 @@ import {
   LossyPreviewOption,
   outputFormatToMimeType,
 } from "@/lib/lossless-optimizer";
+import {
+  getFormattedOutputName,
+  getOutputExtension,
+} from "@/lib/compress-route-utils";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { execFile } from "node:child_process";
 import { promises as fs } from "node:fs";
@@ -90,48 +94,6 @@ type CompressionResponse = {
 
 function createError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
-}
-
-function getOutputExtension(fileName: string, mimeType: string) {
-  const lowerFileName = fileName.toLowerCase();
-
-  if (mimeType === "image/png") {
-    return ".png";
-  }
-
-  if (mimeType === "image/webp") {
-    return ".webp";
-  }
-
-  if (mimeType === "image/avif") {
-    return ".avif";
-  }
-
-  if (mimeType === JXL_MIME_TYPE) {
-    return ".jxl";
-  }
-
-  if (lowerFileName.endsWith(".jpeg")) {
-    return ".jpeg";
-  }
-
-  return ".jpg";
-}
-
-function getFormattedOutputName(
-  originalName: string,
-  mimeType = "image/webp",
-  suffix?: string
-) {
-  const trimmedName = originalName.trim();
-  const fallbackName = "compressed";
-  const nameWithoutExt =
-    trimmedName.length > 0
-      ? trimmedName.replace(/\.[^/.]+$/, "")
-      : fallbackName;
-
-  const baseName = suffix ? `${nameWithoutExt}-${suffix}` : nameWithoutExt;
-  return `${baseName}${getOutputExtension(trimmedName, mimeType)}`;
 }
 
 function getSavedPercent(originalSize: number, compressedSize: number) {

@@ -124,6 +124,27 @@ function getProgressLabel(item: UploadItem) {
   return "Uploading your image...";
 }
 
+function getPreviewDisplay(quality: number) {
+  if (quality === 80) {
+    return {
+      title: "High quality",
+      hint: "Best visual quality",
+    };
+  }
+
+  if (quality === 60) {
+    return {
+      title: "Balanced",
+      hint: "Best size vs quality",
+    };
+  }
+
+  return {
+    title: "Smallest size",
+    hint: "Maximum compression",
+  };
+}
+
 export function ResultsList({
   items,
   onDownload,
@@ -278,8 +299,22 @@ export function ResultsList({
                               previewOption.isRecommended ? "is-recommended" : ""
                             }`}
                           >
+                            {(() => {
+                              const previewDisplay = getPreviewDisplay(
+                                previewOption.quality
+                              );
+
+                              return (
+                                <>
                             <div className="preview-option-header">
-                              <span className="variant-label">{previewOption.label}</span>
+                              <div className="preview-option-copy">
+                                <span className="variant-label">
+                                  {previewDisplay.title}
+                                </span>
+                                <span className="preview-option-hint">
+                                  {previewDisplay.hint}
+                                </span>
+                              </div>
                               {previewOption.isRecommended ? (
                                 <span className="preview-option-badge">Recommended lossy</span>
                               ) : null}
@@ -307,6 +342,9 @@ export function ResultsList({
                             >
                               Download
                             </button>
+                                </>
+                              );
+                            })()}
                           </div>
                         ))}
                         </div>

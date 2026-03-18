@@ -3,6 +3,7 @@
 import { BookmarkPrompt } from "@/components/bookmark-prompt";
 import { FeaturePoints } from "@/components/feature-points";
 import { Header } from "@/components/header";
+import { NotifySignup } from "@/components/notify-signup";
 import { RecentUploads } from "@/components/recent-uploads";
 import {
   ExportVariant,
@@ -64,6 +65,10 @@ type LandingClientProps = {
   title: string;
   subtitle: string;
   intro: string;
+  uploadNote?: {
+    title: string;
+    text: string;
+  };
   featurePoints?: string[];
   benefitTitle: string;
   benefits: string[];
@@ -138,6 +143,7 @@ export function LandingClient({
   title,
   subtitle,
   intro,
+  uploadNote,
   featurePoints = [
     "Smaller image files without the usual back-and-forth",
     "Batch optimize multiple images in one go",
@@ -629,6 +635,7 @@ export function LandingClient({
   );
 
   const canDownloadAll = items.some((item) => item.status === "success");
+  const shouldShowNotifySignup = items.some((item) => item.status === "success");
 
   return (
     <main className="page">
@@ -655,6 +662,12 @@ export function LandingClient({
         selectedFormat={selectedFormat}
         onSelectedFormatChange={setSelectedFormat}
       />
+      {uploadNote ? (
+        <section className="upload-note" aria-label="Image compression formats">
+          <h2>{uploadNote.title}</h2>
+          <p>{uploadNote.text}</p>
+        </section>
+      ) : null}
       {enableRetention ? (
         <div className="recent-uploads-cta">
           <button
@@ -720,6 +733,7 @@ export function LandingClient({
         canDownloadAll={canDownloadAll}
         isDownloadingAll={isDownloadingAll}
       />
+      <NotifySignup visible={shouldShowNotifySignup} />
     </main>
   );
 }

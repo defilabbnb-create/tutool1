@@ -22,6 +22,43 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Notify email storage
+
+Notify emails are now stored in Supabase instead of local JSON files so production signups are durable on Vercel.
+
+Required environment variables:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+Recommended table:
+
+Run the schema in:
+
+- `/Users/v188/Documents/tumvp/supabase/notify_emails.sql`
+
+Local setup:
+
+- open the Supabase SQL Editor
+- paste the contents of `/Users/v188/Documents/tumvp/supabase/notify_emails.sql`
+- run it to create the table
+- add the environment variables to `.env.local`
+- restart the Next.js dev server
+
+Vercel setup:
+
+- add `NEXT_PUBLIC_SUPABASE_URL`
+- add `SUPABASE_SERVICE_ROLE_KEY`
+- redeploy
+
+Notes:
+
+- writes happen only on the server via the service role key
+- the frontend still posts to `/api/notify`
+- duplicate emails are normalized to lowercase and treated as a successful no-op for UX
+
 Optional local binaries for stronger compression:
 
 ```bash
@@ -42,16 +79,40 @@ Run unit tests:
 npm run test:unit
 ```
 
-Run Playwright E2E tests:
+Run API integration tests:
 
 ```bash
-npx playwright test
+npm run test:api
 ```
 
-Run the local format-selection E2E flow against a dev server:
+Run local Playwright E2E tests:
 
 ```bash
-PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 npx playwright test tests/e2e/upload-workflow.spec.ts
+npm run test:e2e
+```
+
+Run Playwright in UI mode:
+
+```bash
+npm run test:e2e:ui
+```
+
+Run production smoke tests against the live site:
+
+```bash
+npm run test:smoke:prod
+```
+
+Run the full local validation stack:
+
+```bash
+npm run test:all
+```
+
+Open the Playwright HTML report after a run:
+
+```bash
+npx playwright show-report
 ```
 
 ## Production validation
@@ -119,10 +180,19 @@ The API compares candidates when possible and reports the chosen method in the r
 
 ## CI
 
-GitHub Actions runs two Playwright checks:
+GitHub Actions now validates four layers:
 
-- local E2E validation against a local Next.js server
-- production format validation against the live Vercel deployment after Vercel reports the deployment complete
+- unit tests
+- API integration tests
+- local Playwright E2E against a local Next.js server
+- separate live production smoke tests
+
+Reports and artifacts:
+
+- Playwright HTML report
+- JSON summary data
+- screenshots / traces / videos on failure
+- GitHub Actions step summary with totals and key failing scenarios
 
 ## Deployment notes
 
